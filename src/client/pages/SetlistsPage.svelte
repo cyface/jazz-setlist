@@ -67,15 +67,6 @@
     </a>
   </nav>
 
-  {#if !archived}
-    <form class="new-setlist" onsubmit={create}>
-      <input bind:value={draft.name} placeholder="Show name" required maxlength="200" aria-label="Show name" />
-      <input type="date" bind:value={draft.showDate} aria-label="Show date" />
-      <input bind:value={draft.venue} placeholder="Venue" maxlength="200" aria-label="Venue" />
-      <button class="primary" type="submit"><Icon name="plus" size={18} /> New setlist</button>
-    </form>
-  {/if}
-
   {#if lastChange}
     <p class="notice" role="status">
       {lastChange.archived ? 'Archived' : 'Restored'} “{lastChange.name}”.
@@ -118,17 +109,67 @@
       {/each}
     </ul>
   {/if}
+
+  {#if !archived}
+    <!-- Below the list: your current setlists are what you usually come here for. -->
+    <form class="new-setlist" onsubmit={create} aria-labelledby="new-setlist-heading">
+      <h2 id="new-setlist-heading">New setlist</h2>
+      <label class="field name">
+        <span>Show name</span>
+        <input bind:value={draft.name} required maxlength="200" />
+      </label>
+      <label class="field">
+        <span>Date</span>
+        <input type="date" bind:value={draft.showDate} />
+      </label>
+      <label class="field">
+        <span>Venue</span>
+        <input bind:value={draft.venue} maxlength="200" />
+      </label>
+      <button class="primary" type="submit"><Icon name="plus" size={18} /> Create setlist</button>
+    </form>
+  {/if}
 </section>
 
 <style>
+  /* Phones: name full width, date and venue side by side, then a full-width button. */
   .new-setlist {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
   }
-  .new-setlist input:first-child {
-    flex: 1 1 14rem;
+  .new-setlist h2 {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+  .new-setlist .name,
+  .new-setlist button {
+    grid-column: 1 / -1;
+  }
+  .new-setlist input {
+    width: 100%;
+    min-width: 0;
+    min-height: 2.75rem;
+  }
+  .new-setlist button {
+    min-height: 2.75rem;
+  }
+  /* Wider: the button sits beside date and venue. */
+  @media (min-width: 600px) {
+    .new-setlist {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+      align-items: end;
+    }
+    .new-setlist button {
+      grid-column: auto;
+    }
   }
   .setlist-row {
     padding: 0 0.4rem 0 0;
