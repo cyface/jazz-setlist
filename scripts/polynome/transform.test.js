@@ -28,6 +28,8 @@ const RAW = {
     'Chitlins con Carne': { standalone: [occ('Chitlins Con Carne - 3/2 CLAVE', 1, ' - 3/2 CLAVE')], setlist: [] },
     // "LATIN" in the newest preset name wins over the STRAIGHT set.
     'Watermelon Man': { standalone: [occ('Watermelon Man - LATIN', 1, ' - LATIN')], setlist: [] },
+    // 💃 is latin too, and wins over 📏 in the same name.
+    'Oye Como Va': { standalone: [occ('Oye Como Va📏💃', 1, '📏💃')], setlist: [] },
   },
   setlists: [{ name: 'Gig', created: 'November 2026', notes: null, items: [] }],
 }
@@ -66,10 +68,15 @@ describe('transform.py feel', () => {
     expect(feels['Watermelon Man']).toBe('latin')
   })
 
-  it('leaves the LATIN cue out of the notes', () => {
+  it('gives latin for 💃 in the newest preset name, even with 📏 and for a STRAIGHT title', () => {
+    expect(feels['Oye Como Va']).toBe('latin')
+  })
+
+  it('leaves the LATIN and 💃 cues out of the notes', () => {
     expect(notes['Watermelon Man'] ?? '').not.toMatch(/latin/i)
-    expect(notes['Song for My Father']).not.toMatch(/latin/i)
-    expect(notes['Song for My Father']).toMatch(/PolyNome cues:/)
+    expect(notes['Oye Como Va'] ?? '').not.toMatch(/latin|💃/i)
+    expect(notes['Song for My Father']).not.toMatch(/latin|💃/i)
+    expect(notes['Song for My Father']).toMatch(/PolyNome cues: bass/)
   })
 
   it('gives swing otherwise, ignoring 🇧🇷 on older presets', () => {
