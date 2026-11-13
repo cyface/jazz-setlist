@@ -1,0 +1,1 @@
+ALTER TABLE `setlists` ADD `archived_at` text;

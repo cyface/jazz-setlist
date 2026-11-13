@@ -148,6 +148,33 @@ describe('setlists', () => {
     expect((await t.api(OTHER, 'GET', `/setlists/${setlist.id}`)).status).toBe(404)
     expect((await t.api(OTHER, 'PUT', `/setlists/${setlist.id}/items`, { items: [] })).status).toBe(404)
     expect((await t.api(OTHER, 'DELETE', `/setlists/${setlist.id}`)).status).toBe(404)
+    expect((await t.api(OTHER, 'PUT', `/setlists/${setlist.id}/archived`, { archived: true })).status).toBe(404)
+  })
+
+  it('archives and restores a setlist without losing its tunes', async () => {
+    const a = await createArrangement(TIM)
+    const { setlist } = await (await t.api(TIM, 'POST', '/setlists', { name: 'Old gig' })).json()
+    expect(setlist.archivedAt).toBeNull()
+    await t.api(TIM, 'PUT', `/setlists/${setlist.id}/items`, { items: [{ kind: 'tune', arrangementId: a.id }] })
+
+    const archived = (await (await t.api(TIM, 'PUT', `/setlists/${setlist.id}/archived`, { archived: true })).json()).setlist
+    expect(archived.archivedAt).toEqual(expect.any(String))
+    expect(archived.items).toHaveLength(1)
+    const listed = (await (await t.api(TIM, 'GET', '/setlists')).json()).setlists.find((s) => s.id === setlist.id)
+    expect(listed.archivedAt).toBe(archived.archivedAt)
+
+    // Editing the details keeps it archived.
+    const edited = (await (await t.api(TIM, 'PUT', `/setlists/${setlist.id}`, { name: 'Old gig (2019)' })).json()).setlist
+    expect(edited.archivedAt).toBe(archived.archivedAt)
+
+    const restored = (await (await t.api(TIM, 'PUT', `/setlists/${setlist.id}/archived`, { archived: false })).json()).setlist
+    expect(restored.archivedAt).toBeNull()
+    expect(restored.items).toHaveLength(1)
+  })
+
+  it('rejects an invalid archive request', async () => {
+    const { setlist } = await (await t.api(TIM, 'POST', '/setlists', { name: 'Bad archive' })).json()
+    expect((await t.api(TIM, 'PUT', `/setlists/${setlist.id}/archived`, { archived: 'yes' })).status).toBe(400)
   })
 })
 

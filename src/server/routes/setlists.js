@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { arrangements, setlistItems, setlists } from '../../db/schema.js'
-import { setlistInputSchema, setlistItemsSchema } from '../../shared/validation.js'
+import { setlistArchiveSchema, setlistInputSchema, setlistItemsSchema } from '../../shared/validation.js'
 import { notFound, now, omitUserId, parseBody } from '../lib/http.js'
 
 const owned = (c, id) => and(eq(setlists.id, id), eq(setlists.userId, c.get('user').id))
@@ -35,6 +35,7 @@ export const setlistsRoutes = new Hono()
         name: setlists.name,
         venue: setlists.venue,
         showDate: setlists.showDate,
+        archivedAt: setlists.archivedAt,
         updatedAt: setlists.updatedAt,
         tuneCount: sql`(select count(*) from setlist_items si where si.setlist_id = "setlists"."id" and si.kind = 'tune')`.mapWith(Number),
       })
@@ -61,6 +62,18 @@ export const setlistsRoutes = new Hono()
       .get('db')
       .update(setlists)
       .set({ ...input, updatedAt: now() })
+      .where(owned(c, id))
+      .returning({ id: setlists.id })
+    if (!row) throw notFound('Setlist')
+    return c.json({ setlist: await loadSetlist(c, id) })
+  })
+  .put('/:id/archived', async (c) => {
+    const { archived } = await parseBody(c, setlistArchiveSchema)
+    const id = c.req.param('id')
+    const [row] = await c
+      .get('db')
+      .update(setlists)
+      .set({ archivedAt: archived ? now() : null })
       .where(owned(c, id))
       .returning({ id: setlists.id })
     if (!row) throw notFound('Setlist')

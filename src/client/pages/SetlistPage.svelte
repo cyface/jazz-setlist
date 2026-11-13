@@ -86,6 +86,15 @@
     }
   }
 
+  async function toggleArchived() {
+    error = ''
+    try {
+      setlist = await api.setSetlistArchived(id, !setlist.archivedAt)
+    } catch (err) {
+      error = err.message
+    }
+  }
+
   async function deleteSetlist() {
     if (!confirm(`Delete setlist “${setlist.name}”? Tunes are kept.`)) return
     await api.deleteSetlist(id)
@@ -121,8 +130,17 @@
           <div>
             <h1>{setlist.name}</h1>
             <p class="muted">{[formatDate(setlist.showDate), setlist.venue].filter(Boolean).join(' · ')}</p>
+            {#if setlist.archivedAt}
+              <p class="archived-tag"><Icon name="archive" size={16} /> Archived</p>
+            {/if}
           </div>
-          <button onclick={() => (editingInfo = true)}><Icon name="edit" size={18} /> Edit</button>
+          <div class="toolbar-actions">
+            <button onclick={() => (editingInfo = true)}><Icon name="edit" size={18} /> Edit</button>
+            <button onclick={toggleArchived} title={setlist.archivedAt ? 'Move back to active setlists' : 'Keep it, but hide it from active setlists'}>
+              <Icon name={setlist.archivedAt ? 'unarchive' : 'archive'} size={18} />
+              {setlist.archivedAt ? 'Restore' : 'Archive'}
+            </button>
+          </div>
         </div>
         {#if setlist.notes}<p class="notes">{setlist.notes}</p>{/if}
       {/if}
@@ -204,6 +222,23 @@
 {/snippet}
 
 <style>
+  .toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.4rem;
+  }
+  .archived-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    background: var(--chip);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
   .setlist {
     display: grid;
     grid-template-columns: minmax(0, 1fr);

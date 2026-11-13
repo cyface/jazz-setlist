@@ -31,6 +31,7 @@ export const api = {
   getSetlist: (id) => request('GET', `/setlists/${id}`).then((r) => r.setlist),
   createSetlist: (data) => request('POST', '/setlists', data).then((r) => r.setlist),
   updateSetlist: (id, data) => request('PUT', `/setlists/${id}`, data).then((r) => r.setlist),
+  setSetlistArchived: (id, archived) => request('PUT', `/setlists/${id}/archived`, { archived }).then((r) => r.setlist),
   saveSetlistItems: (id, items) => request('PUT', `/setlists/${id}/items`, { items }).then((r) => r.setlist),
   deleteSetlist: (id) => request('DELETE', `/setlists/${id}`),
 }
