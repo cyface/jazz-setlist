@@ -31,10 +31,36 @@ describe('auth', () => {
     expect(remote.status).toBe(401)
   })
 
+  it('starts users on the default preferences', async () => {
+    const { user } = await (await t.api('fresh@example.com', 'GET', '/me')).json()
+    expect(user.preferences).toEqual({
+      hideDefaults: false,
+      defaults: { feel: 'swing', drumImplement: 'sticks', drumsEntry: 'top', timeSignature: '4/4' },
+    })
+  })
+
   it('provisions a user once per email, case-insensitively', async () => {
     const a = await (await t.api('Case@Example.com', 'GET', '/me')).json()
     const b = await (await t.api('case@example.com', 'GET', '/me')).json()
     expect(a.user.id).toBe(b.user.id)
+  })
+})
+
+describe('preferences', () => {
+  const prefs = { hideDefaults: true, defaults: { feel: 'swing', drumImplement: 'brushes', drumsEntry: 'top', timeSignature: '6/8' } }
+
+  it('saves preferences per user', async () => {
+    const res = await t.api('prefs@example.com', 'PUT', '/me/preferences', prefs)
+    expect(res.status).toBe(200)
+    expect((await res.json()).preferences).toEqual(prefs)
+    expect((await (await t.api('prefs@example.com', 'GET', '/me')).json()).user.preferences).toEqual(prefs)
+    expect((await (await t.api('other-prefs@example.com', 'GET', '/me')).json()).user.preferences.hideDefaults).toBe(false)
+  })
+
+  it('rejects invalid preferences', async () => {
+    const res = await t.api('prefs@example.com', 'PUT', '/me/preferences', { ...prefs, defaults: { ...prefs.defaults, feel: 'polka' } })
+    expect(res.status).toBe(400)
+    expect((await res.json()).issues[0].path).toBe('defaults.feel')
   })
 })
 
@@ -50,6 +76,13 @@ describe('arrangements', () => {
 
     expect((await t.api(TIM, 'DELETE', `/arrangements/${created.id}`)).status).toBe(204)
     expect((await t.api(TIM, 'GET', `/arrangements/${created.id}`)).status).toBe(404)
+  })
+
+  it('stores the time signature, defaulting the beat unit to 4', async () => {
+    expect((await createArrangement(TIM, { beatsPerBar: 3 })).beatUnit).toBe(4)
+    expect(await createArrangement(TIM, { beatsPerBar: 6, beatUnit: 8 })).toMatchObject({ beatsPerBar: 6, beatUnit: 8 })
+    const res = await t.api(TIM, 'POST', '/arrangements', sampleArrangement({ beatUnit: 3 }))
+    expect(res.status).toBe(400)
   })
 
   it('clears the drums entry note when drums play from the top', async () => {

@@ -21,6 +21,9 @@ async function request(method, path, body) {
 }
 
 export const api = {
+  me: () => request('GET', '/me').then((r) => r.user),
+  savePreferences: (preferences) => request('PUT', '/me/preferences', preferences).then((r) => r.preferences),
+
   listArrangements: () => request('GET', '/arrangements').then((r) => r.arrangements),
   getArrangement: (id) => request('GET', `/arrangements/${id}`).then((r) => r.arrangement),
   createArrangement: (data) => request('POST', '/arrangements', data).then((r) => r.arrangement),

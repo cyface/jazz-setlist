@@ -10,6 +10,7 @@ describe('matchRoute', () => {
     ['#/arrangements/abc-1/edit', { name: 'arrangement-edit', id: 'abc-1' }],
     ['#/setlists', { name: 'setlists', archived: false }],
     ['#/setlists/archived', { name: 'setlists', archived: true }],
+    ['#/preferences', { name: 'preferences' }],
     ['#/setlists/xyz', { name: 'setlist', id: 'xyz' }],
     ['#/nowhere/at/all', { name: 'not-found' }],
   ])('%s', (hash, expected) => {

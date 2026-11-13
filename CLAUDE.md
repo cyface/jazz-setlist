@@ -18,9 +18,9 @@ Setlist manager for a jazz drummer: per-user tune arrangements, show setlists wi
 src/
   server/      index.jsx (Hono app + shell route), shell.jsx, middleware/auth.js, routes/*.js, lib/http.js
   db/          schema.js (all tables), index.js (createDb)
-  shared/      attributes.js (enums, labels), validation.js (Zod), setlist.js (numberSets, moveItem)
-  client/      main.js, App.svelte, app.css, pages/, components/, lib/ (api, router, metronome)
-drizzle/       SQL migrations (generated; do not hand-edit)
+  shared/      attributes.js (enums, labels), validation.js (Zod), setlist.js (numberSets, moveItem), preferences.js
+  client/      main.js, App.svelte, app.css, pages/, components/, lib/ (api, router, metronome, session)
+drizzle/       SQL migrations (generated; do not hand-edit). Data migrations: `drizzle-kit generate --custom --name=<name>`
 ```
 
 ## Commands
@@ -58,16 +58,20 @@ pnpm import:polynome <backup.pln> <email> [--local|--remote]   # PolyNome backup
 
 ## Data model
 
-- `arrangements`: title, composer, musical_key, tempo (bpm), beats_per_bar, `feel` (swing|straight), `drum_implement` (sticks|brushes), `drums_entry` (top|later) + `drums_entry_note`, `solo_order` (JSON), notes.
+- `arrangements`: title, composer, musical_key, tempo (bpm), beats_per_bar + beat_unit (time signature, e.g. 6 + 8 = 6/8; `timeSignature()` in attributes.js), `feel` (swing|straight), `drum_implement` (sticks|brushes), `drums_entry` (top|later) + `drums_entry_note`, `solo_order` (JSON), notes.
 - `solo_order` entries: `{type:'solo', instrument}`, `{type:'trade', instruments:[≥2], bars:2|4|8}`, `{type:'over_head', instrument}` (e.g. drums solo over the head out). Instruments are free text, lowercased; suggestions in `INSTRUMENTS`.
+- `users.preferences` (JSON, null = defaults): `{ hideDefaults, defaults: { feel, drumImplement, drumsEntry, timeSignature } }` (timeSignature is a string like "4/4" from `TIME_SIGNATURES`). `resolvePreferences()` (`src/shared/preferences.js`) merges stored values over `DEFAULT_PREFERENCES`; the auth middleware attaches the result to the user. Defaults prefill new tunes; with `hideDefaults`, compact `TuneBadges` (list views) leave out attribute values equal to the default.
 - `setlists` + `setlist_items` (`kind` tune|break, `position`). `setlists.archived_at` (null = active) archives a setlist without deleting it; the list page has Active / Archived tabs (`#/setlists`, `#/setlists/archived`). `PUT /api/setlists/:id/items` replaces all items in one D1 batch. Deleting an arrangement cascades out of setlists.
-- Adding an attribute value: extend the enum in `src/shared/attributes.js` (+ `LABELS`), add an icon branch in `Icon.svelte`, and a badge color token in `app.css`. Enum columns are TEXT, so no migration is needed for new values.
+- Adding an attribute value: extend the enum in `src/shared/attributes.js` (+ `LABELS`), add an icon branch in `Icon.svelte`, a badge color token in `app.css`, and the option in `src/client/lib/choices.js`. Enum columns are TEXT, so no migration is needed for new values.
 
 ## API
 
-`/api/me`, `/api/arrangements[/:id]` (GET/POST/PUT/DELETE), `/api/setlists[/:id]` (GET/POST/PUT/DELETE), `PUT /api/setlists/:id/items`, `PUT /api/setlists/:id/archived` (`{ archived: boolean }`). Errors are `{ error }` or `{ error, issues: [{path, message}] }` on 400.
+`/api/me` (user + preferences), `PUT /api/me/preferences`, `/api/arrangements[/:id]` (GET/POST/PUT/DELETE), `/api/setlists[/:id]` (GET/POST/PUT/DELETE), `PUT /api/setlists/:id/items`, `PUT /api/setlists/:id/archived` (`{ archived: boolean }`). Errors are `{ error }` or `{ error, issues: [{path, message}] }` on 400.
 
 ## Frontend conventions
+
+- Layout mirrors cyface-invoice's AppShell: `Sidebar.svelte` is a drawer opened by the top bar's hamburger below 768px, an icon rail from 768px and a full sidebar from 1024px; its nav is Tunes / Setlists / Preferences, with the app version (`__APP_VERSION__`) at the bottom. `Topbar.svelte` has the theme toggle and the user avatar menu (email, Preferences, Log out via `/cdn-cgi/access/logout`).
+- `lib/session.svelte.js` holds the signed-in user and preferences (`$state`); `App.svelte` loads it before rendering any page, so pages can read `session.preferences` synchronously.
 
 - Icons are hand-drawn inline SVG in `src/client/components/Icon.svelte`; every attribute shows as an icon (with label, or with tooltip/`aria-label` in compact mode) via `TuneBadges.svelte`.
 - Metronome: `src/client/lib/metronome.js` is a Web Audio lookahead scheduler (clicks scheduled on the audio clock, beat squares lit by `requestAnimationFrame`). Keep timing logic in pure functions (`planBeats`, `isAccent`, `tapTempo`) and test them. Space bar toggles play; screen wake lock is held while playing.

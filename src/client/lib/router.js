@@ -6,6 +6,7 @@ const ROUTES = [
   [/^\/setlists$/, () => ({ name: 'setlists', archived: false })],
   [/^\/setlists\/archived$/, () => ({ name: 'setlists', archived: true })],
   [/^\/setlists\/([\w-]+)$/, (m) => ({ name: 'setlist', id: m[1] })],
+  [/^\/preferences$/, () => ({ name: 'preferences' })],
 ]
 
 export function matchRoute(hash) {
