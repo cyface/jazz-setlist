@@ -48,6 +48,8 @@ export const setlistInputSchema = z.object({
   notes: optionalText(5000),
 })
 
+export const setlistArchiveSchema = z.object({ archived: z.boolean() })
+
 export const setlistItemsSchema = z.object({
   items: z
     .array(

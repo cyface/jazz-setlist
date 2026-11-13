@@ -42,6 +42,8 @@ export const setlists = sqliteTable(
     venue: text('venue'),
     showDate: text('show_date'),
     notes: text('notes'),
+    // Set when the setlist is archived (kept, but out of the active list); null = active.
+    archivedAt: text('archived_at'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },

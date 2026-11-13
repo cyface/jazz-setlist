@@ -45,7 +45,7 @@
     {:else if route.name === 'arrangement-edit'}
       <ArrangementEditPage id={route.id} />
     {:else if route.name === 'setlists'}
-      <SetlistsPage />
+      <SetlistsPage archived={route.archived} />
     {:else if route.name === 'setlist'}
       <SetlistPage id={route.id} />
     {:else}

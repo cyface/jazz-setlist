@@ -87,6 +87,12 @@
   {:else if name === 'auto'}
     <circle cx="12" cy="12" r="8.5" />
     <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none" />
+  {:else if name === 'archive'}
+    <rect x="3.5" y="4.5" width="17" height="4" rx="1" />
+    <path d="M5 8.5V18a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 18V8.5M10 12.5h4" />
+  {:else if name === 'unarchive'}
+    <rect x="3.5" y="4.5" width="17" height="4" rx="1" />
+    <path d="M5 8.5V18a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 18V8.5M12 17v-5.5M9.5 14 12 11.5l2.5 2.5" />
   {:else if name === 'edit'}
     <path d="M4 20h4L19 9l-4-4L4 16z" />
   {/if}

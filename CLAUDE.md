@@ -59,12 +59,12 @@ pnpm icons              # re-render favicon + PWA PNGs from public/favicon.svg (
 
 - `arrangements`: title, composer, musical_key, tempo (bpm), beats_per_bar, `feel` (swing|straight), `drum_implement` (sticks|brushes), `drums_entry` (top|later) + `drums_entry_note`, `solo_order` (JSON), notes.
 - `solo_order` entries: `{type:'solo', instrument}`, `{type:'trade', instruments:[≥2], bars:2|4|8}`, `{type:'over_head', instrument}` (e.g. drums solo over the head out). Instruments are free text, lowercased; suggestions in `INSTRUMENTS`.
-- `setlists` + `setlist_items` (`kind` tune|break, `position`). `PUT /api/setlists/:id/items` replaces all items in one D1 batch. Deleting an arrangement cascades out of setlists.
+- `setlists` + `setlist_items` (`kind` tune|break, `position`). `setlists.archived_at` (null = active) archives a setlist without deleting it; the list page has Active / Archived tabs (`#/setlists`, `#/setlists/archived`). `PUT /api/setlists/:id/items` replaces all items in one D1 batch. Deleting an arrangement cascades out of setlists.
 - Adding an attribute value: extend the enum in `src/shared/attributes.js` (+ `LABELS`), add an icon branch in `Icon.svelte`, and a badge color token in `app.css`. Enum columns are TEXT, so no migration is needed for new values.
 
 ## API
 
-`/api/me`, `/api/arrangements[/:id]` (GET/POST/PUT/DELETE), `/api/setlists[/:id]` (GET/POST/PUT/DELETE), `PUT /api/setlists/:id/items`. Errors are `{ error }` or `{ error, issues: [{path, message}] }` on 400.
+`/api/me`, `/api/arrangements[/:id]` (GET/POST/PUT/DELETE), `/api/setlists[/:id]` (GET/POST/PUT/DELETE), `PUT /api/setlists/:id/items`, `PUT /api/setlists/:id/archived` (`{ archived: boolean }`). Errors are `{ error }` or `{ error, issues: [{path, message}] }` on 400.
 
 ## Frontend conventions
 
