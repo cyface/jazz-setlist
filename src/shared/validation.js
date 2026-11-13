@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { DRUM_IMPLEMENTS, DRUMS_ENTRIES, FEELS, TRADE_BARS } from './attributes.js'
+import { BEAT_UNITS, DRUM_IMPLEMENTS, DRUMS_ENTRIES, FEELS, TIME_SIGNATURES, TRADE_BARS } from './attributes.js'
 
 const instrument = z.string().trim().toLowerCase().min(1).max(30)
 
@@ -28,6 +28,7 @@ export const arrangementInputSchema = z
     musicalKey: optionalText(20),
     tempo: z.number().int().min(20).max(400),
     beatsPerBar: z.number().int().min(1).max(12),
+    beatUnit: z.literal(BEAT_UNITS).default(4),
     feel: z.enum(FEELS),
     drumImplement: z.enum(DRUM_IMPLEMENTS),
     drumsEntry: z.enum(DRUMS_ENTRIES),
@@ -59,4 +60,15 @@ export const setlistItemsSchema = z.object({
       ]),
     )
     .max(200),
+})
+
+/** Per-user preferences (PUT /api/me/preferences). */
+export const preferencesSchema = z.object({
+  hideDefaults: z.boolean(),
+  defaults: z.object({
+    feel: z.enum(FEELS),
+    drumImplement: z.enum(DRUM_IMPLEMENTS),
+    drumsEntry: z.enum(DRUMS_ENTRIES),
+    timeSignature: z.enum(TIME_SIGNATURES),
+  }),
 })

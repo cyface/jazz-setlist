@@ -19,7 +19,7 @@ export default [
   },
   {
     files: ['src/client/**'],
-    languageOptions: { globals: globals.browser },
+    languageOptions: { globals: { ...globals.browser, __APP_VERSION__: 'readonly' } },
   },
   {
     files: ['src/server/**', 'src/db/**', 'src/shared/**'],

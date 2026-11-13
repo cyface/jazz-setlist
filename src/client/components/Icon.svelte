@@ -79,6 +79,23 @@
     <path d="M12 4v11M7 10.5l5 5 5-5M5 20h14" />
   {:else if name === 'close'}
     <path d="M6 6l12 12M18 6 6 18" />
+  {:else if name === 'menu'}
+    <path d="M4 7h16M4 12h16M4 17h16" />
+  {:else if name === 'tunes'}
+    <!-- a single eighth note -->
+    <ellipse cx="8.5" cy="17.5" rx="3.2" ry="2.4" transform="rotate(-20 8.5 17.5)" fill="currentColor" stroke="none" />
+    <path d="M11.4 16.6V4c1.5 2.6 5.6 3.4 5.6 7.4" />
+  {:else if name === 'setlists'}
+    <path d="M9 6.5h11M9 12h11M9 17.5h11" />
+    <path d="M4 5.5 5.2 7.5 7 5M4 11l1.2 2L7 10.5" />
+    <circle cx="5.3" cy="17.5" r="0.9" fill="currentColor" stroke="none" />
+  {:else if name === 'preferences'}
+    <!-- sliders -->
+    <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+    <circle cx="15" cy="7" r="2" />
+    <circle cx="9" cy="17" r="2" />
+  {:else if name === 'logout'}
+    <path d="M10 4.5H6.5A1.5 1.5 0 0 0 5 6v12a1.5 1.5 0 0 0 1.5 1.5H10M14 8l4 4-4 4M18 12H9.5" />
   {:else if name === 'sun'}
     <circle cx="12" cy="12" r="4" />
     <path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4" />

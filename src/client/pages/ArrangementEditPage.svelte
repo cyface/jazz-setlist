@@ -3,8 +3,10 @@
   import SoloOrderEditor from '../components/SoloOrderEditor.svelte'
   import { api } from '../lib/api.js'
   import { tapTempo } from '../lib/metronome.js'
+  import { ENTRY_OPTIONS, FEEL_OPTIONS, IMPLEMENT_OPTIONS } from '../lib/choices.js'
   import { navigate } from '../lib/router.js'
-  import { BEATS_PER_BAR_OPTIONS, LABELS } from '../../shared/attributes.js'
+  import { session } from '../lib/session.svelte.js'
+  import { BEAT_UNITS, BEATS_PER_BAR_OPTIONS, parseTimeSignature } from '../../shared/attributes.js'
 
   let { id } = $props()
 
@@ -13,10 +15,10 @@
     composer: '',
     musicalKey: '',
     tempo: 120,
-    beatsPerBar: 4,
-    feel: 'swing',
-    drumImplement: 'sticks',
-    drumsEntry: 'top',
+    feel: session.preferences.defaults.feel,
+    drumImplement: session.preferences.defaults.drumImplement,
+    drumsEntry: session.preferences.defaults.drumsEntry,
+    ...parseTimeSignature(session.preferences.defaults.timeSignature),
     drumsEntryNote: '',
     soloOrder: [],
     notes: '',
@@ -41,18 +43,6 @@
   }
   load()
 
-  const feelOptions = [
-    { value: 'swing', label: LABELS.feel.swing, icon: 'swing' },
-    { value: 'straight', label: LABELS.feel.straight, icon: 'straight' },
-  ]
-  const implementOptions = [
-    { value: 'sticks', label: LABELS.drumImplement.sticks, icon: 'sticks' },
-    { value: 'brushes', label: LABELS.drumImplement.brushes, icon: 'brushes' },
-  ]
-  const entryOptions = [
-    { value: 'top', label: 'From the top', icon: 'drum' },
-    { value: 'later', label: 'Come in later', icon: 'drum-later' },
-  ]
 
   function tap() {
     const result = tapTempo(taps, performance.now())
@@ -65,7 +55,7 @@
     saving = true
     error = ''
     try {
-      const payload = { ...$state.snapshot(form), tempo: Number(form.tempo), beatsPerBar: Number(form.beatsPerBar) }
+      const payload = { ...$state.snapshot(form), tempo: Number(form.tempo), beatsPerBar: Number(form.beatsPerBar), beatUnit: Number(form.beatUnit) }
       const saved = id ? await api.updateArrangement(id, payload) : await api.createArrangement(payload)
       navigate(`/arrangements/${saved.id}`)
     } catch (err) {
@@ -113,17 +103,23 @@
             <button type="button" onclick={tap}>Tap</button>
           </span>
         </label>
-        <label class="field">
-          <span>Beats per bar</span>
-          <select bind:value={form.beatsPerBar}>
-            {#each BEATS_PER_BAR_OPTIONS as n (n)}<option value={n}>{n}</option>{/each}
-          </select>
-        </label>
+        <div class="field">
+          <span id="time-signature">Time signature</span>
+          <span class="inline time-signature" role="group" aria-labelledby="time-signature">
+            <select bind:value={form.beatsPerBar} aria-label="Beats per bar">
+              {#each BEATS_PER_BAR_OPTIONS as n (n)}<option value={n}>{n}</option>{/each}
+            </select>
+            <span aria-hidden="true">/</span>
+            <select bind:value={form.beatUnit} aria-label="Beat unit">
+              {#each BEAT_UNITS as n (n)}<option value={n}>{n}</option>{/each}
+            </select>
+          </span>
+        </div>
       </div>
 
-      <ChoiceGroup legend="Feel" name="feel" options={feelOptions} bind:value={form.feel} />
-      <ChoiceGroup legend="Drums play with" name="implement" options={implementOptions} bind:value={form.drumImplement} />
-      <ChoiceGroup legend="Drums" name="entry" options={entryOptions} bind:value={form.drumsEntry} />
+      <ChoiceGroup legend="Feel" name="feel" options={FEEL_OPTIONS} bind:value={form.feel} />
+      <ChoiceGroup legend="Drums play with" name="implement" options={IMPLEMENT_OPTIONS} bind:value={form.drumImplement} />
+      <ChoiceGroup legend="Drums" name="entry" options={ENTRY_OPTIONS} bind:value={form.drumsEntry} />
       {#if form.drumsEntry === 'later'}
         <label class="field">
           <span>Drums come in at</span>
@@ -151,3 +147,12 @@
     </form>
   {/if}
 </section>
+
+<style>
+  .time-signature {
+    align-items: center;
+  }
+  .time-signature select {
+    flex: 1;
+  }
+</style>

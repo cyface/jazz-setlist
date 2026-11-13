@@ -3,7 +3,18 @@ export const DRUM_IMPLEMENTS = ['sticks', 'brushes']
 export const DRUMS_ENTRIES = ['top', 'later']
 export const SOLO_TYPES = ['solo', 'trade', 'over_head']
 export const TRADE_BARS = [2, 4, 8]
-export const BEATS_PER_BAR_OPTIONS = [2, 3, 4, 5, 6, 7]
+export const BEATS_PER_BAR_OPTIONS = [2, 3, 4, 5, 6, 7, 9, 12]
+export const BEAT_UNITS = [2, 4, 8]
+/** Common time signatures, offered as the default in preferences. */
+export const TIME_SIGNATURES = ['2/4', '3/4', '4/4', '5/4', '6/4', '6/8', '7/4', '9/8', '12/8']
+
+export const timeSignature = (arrangement) => `${arrangement.beatsPerBar}/${arrangement.beatUnit ?? 4}`
+
+/** "6/8" -> { beatsPerBar: 6, beatUnit: 8 } */
+export function parseTimeSignature(sig) {
+  const [beatsPerBar, beatUnit] = sig.split('/').map(Number)
+  return { beatsPerBar, beatUnit }
+}
 export const INSTRUMENTS = [
   'piano',
   'guitar',

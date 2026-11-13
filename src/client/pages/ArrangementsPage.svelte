@@ -75,6 +75,7 @@
   }
   .row {
     flex-wrap: wrap;
+    min-height: 3.25rem; /* rows keep one height when "hide defaults" leaves no badges */
   }
   .placeholder {
     padding: 2rem 0;
