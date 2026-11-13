@@ -58,11 +58,11 @@ describe('preferences', () => {
     expect((await (await t.api('other-prefs@example.com', 'GET', '/me')).json()).user.preferences.hideDefaults).toBe(false)
   })
 
-  it('accepts every feel as the default feel, including bossa', async () => {
-    const bossa = { ...prefs, defaults: { ...prefs.defaults, feel: 'bossa' } }
-    const res = await t.api('prefs@example.com', 'PUT', '/me/preferences', bossa)
+  it.each(['bossa', 'latin'])('accepts %s as the default feel', async (feel) => {
+    const body = { ...prefs, defaults: { ...prefs.defaults, feel } }
+    const res = await t.api('prefs@example.com', 'PUT', '/me/preferences', body)
     expect(res.status).toBe(200)
-    expect((await res.json()).preferences.defaults.feel).toBe('bossa')
+    expect((await res.json()).preferences.defaults.feel).toBe(feel)
   })
 
   it('round-trips sound, and keeps it on when an older client leaves it out', async () => {
@@ -109,6 +109,10 @@ describe('arrangements', () => {
 
   it('stores a bossa feel', async () => {
     expect((await createArrangement(TIM, { feel: 'bossa' })).feel).toBe('bossa')
+  })
+
+  it('stores a latin feel', async () => {
+    expect((await createArrangement(TIM, { feel: 'latin' })).feel).toBe('latin')
   })
 
   it('clears the drums entry note when drums play from the top', async () => {

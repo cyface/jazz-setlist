@@ -15,12 +15,14 @@ EMOJI = [('🚫🥁', 'no drums'), ('💹8️⃣', 'trading 8s'), ('💹4️⃣'
          ('💹4', 'trading 4s'), ('1️⃣6️⃣', '16ths'), ('6️⃣/8️⃣', '6/8'), ('8️⃣', '8ths'), ('3️⃣', 'count 3'),
          ('🥢', 'sticks'), ('🖌', 'brushes'), ('🎤', 'drum solo'), ('💹', 'trading'), ('🇧🇷', 'bossa'),
          ('📏', 'straight'), ('🛑', 'stop time'), ('🔀', 'shuffle'), ('🎹', 'keys'), ('🐟', 'bass')]
-# Feel: 🇧🇷 or a title in BOSSA -> bossa; otherwise 📏 or a title in STRAIGHT -> straight; otherwise swing.
+# Feel: 🇧🇷 or a title in BOSSA -> bossa; otherwise the word "latin" or a title in LATIN -> latin;
+# otherwise 📏 or a title in STRAIGHT -> straight; otherwise swing.
 BOSSA = {'Black Orpheus', 'Blue Bossa', 'Girl from Ipanema', 'How Insensitive', 'Quiet Nights of Quiet Stars'}
-STRAIGHT = {'Afro Blue', 'Besame Mucho', 'Chameleon', 'Cherry Pink and Apple Blossom White', 'Chitlins con Carne',
-            'Cold Duck Time', 'Green Onions', 'Human Nature', 'Just the Two of Us', 'Look to the Sky',
+LATIN = {'Chitlins con Carne', 'Song for My Father'}
+STRAIGHT = {'Afro Blue', 'Besame Mucho', 'Chameleon', 'Cherry Pink and Apple Blossom White', 'Cold Duck Time',
+            'Green Onions', 'Human Nature', 'Just the Two of Us', 'Look to the Sky',
             'Mercy, Mercy, Mercy', 'Oye Como Va', 'Red Clay', 'Samba de Orfeu', 'She Said She Said',
-            'Song for My Father', 'St. Thomas', 'Watermelon Man'}
+            'St. Thomas', 'Watermelon Man'}
 S = lambda i: {'type': 'solo', 'instrument': i}
 T = lambda bars, *i: {'type': 'trade', 'instruments': list(i), 'bars': bars}
 OVER = lambda i: {'type': 'over_head', 'instrument': i}
@@ -60,7 +62,7 @@ LATER = {
     'Take the A Train': 'After the piano intro',
     'Blue Jar': 'After the bass intro',
 }
-DROP_CUES = {'sticks', 'brushes', 'solo', 'drum solo', 'trading', 'straight', 'bossa', 'sticks sticks', '/'}
+DROP_CUES = {'sticks', 'brushes', 'solo', 'drum solo', 'trading', 'straight', 'bossa', 'latin', 'sticks sticks', '/'}
 
 def translate(cue):
     c = cue.replace('️', '️')  # keep keycaps intact for the table
@@ -107,6 +109,7 @@ def solo_order(title, occs):
 def feel(title, occs):
     name = latest(occs)[0]['name']  # the tune's newest preset name
     if title in BOSSA or '🇧🇷' in name: return 'bossa'
+    if title in LATIN or re.search(r'\blatin\b', name, re.I): return 'latin'
     if title in STRAIGHT or '📏' in name: return 'straight'
     return 'swing'
 

@@ -15,8 +15,8 @@ describe('resolvePreferences', () => {
     })
   })
 
-  it('keeps a stored bossa default feel', () => {
-    expect(resolvePreferences({ defaults: { feel: 'bossa' } }).defaults.feel).toBe('bossa')
+  it.each(['bossa', 'latin'])('keeps a stored %s default feel', (feel) => {
+    expect(resolvePreferences({ defaults: { feel } }).defaults.feel).toBe(feel)
   })
 
   it('ignores invalid stored values', () => {

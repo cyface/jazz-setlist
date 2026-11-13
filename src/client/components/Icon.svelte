@@ -37,6 +37,11 @@
     <ellipse cx="13.6" cy="8.6" rx="4.4" ry="5.4" transform="rotate(35 13.6 8.6)" fill="currentColor" />
     <path d="M10.5 13 5.6 19.9" stroke-width="2.6" />
     <path d="M4.6 9.4c.2-1.5.9-2.8 2-3.8M2.4 8.6c.3-2.3 1.4-4.3 3.1-5.8M18.4 15.4c1.2-.4 2.2-1.1 2.9-2.1M18.6 18.4c1.7-.6 3-1.6 3.9-3" stroke-width="1.4" />
+  {:else if name === 'latin'}
+    <!-- a conga: tall barrel drum with a tuning band -->
+    <ellipse cx="12" cy="4.6" rx="5" ry="1.8" />
+    <path d="M7 4.6C5.2 9.2 5.4 14.6 8.4 21h7.2c3-6.4 3.2-11.8 1.4-16.4" />
+    <path d="M6.3 9.4c3.8 1.4 7.6 1.4 11.4 0" stroke-width="1.4" />
   {:else if name === 'sticks'}
     <path d="M4 21 17 5M20 21 7 5" stroke-width="2.2" />
     <circle cx="17.7" cy="4.2" r="1.5" fill="currentColor" stroke="none" />

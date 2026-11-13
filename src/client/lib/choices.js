@@ -5,6 +5,7 @@ export const FEEL_OPTIONS = [
   { value: 'swing', label: LABELS.feel.swing, icon: 'swing' },
   { value: 'straight', label: LABELS.feel.straight, icon: 'straight' },
   { value: 'bossa', label: LABELS.feel.bossa, icon: 'bossa' },
+  { value: 'latin', label: LABELS.feel.latin, icon: 'latin' },
 ]
 export const IMPLEMENT_OPTIONS = [
   { value: 'sticks', label: LABELS.drumImplement.sticks, icon: 'sticks' },
