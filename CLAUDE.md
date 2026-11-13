@@ -38,10 +38,12 @@ pnpm release            # build, apply remote migrations, wrangler deploy (manua
 
 `pnpm deploy` is pnpm's built-in workspace command, not a script; never name a script `deploy`.
 
-## Deployment (Cloudflare Workers Builds)
+## Deployment (GitHub Actions → Cloudflare)
 
-- Repo: `git@github.com:cyface/jazz-setlist.git`, branch `main`. Cloudflare account `16805f1fb394761354e4f3f30bafa8c4` (timlwhite), D1 `jazz-setlist`.
-- Workers Builds settings: build command `pnpm build`, deploy command `pnpm release:ci` (applies pending D1 migrations, then `wrangler deploy`). The build token needs D1 edit permission for the migration step.
+- Repo: `git@github.com:cyface/jazz-setlist.git`, branch `main`. Everything (Worker + D1 `jazz-setlist`) lives in the timlwhite Cloudflare account `16805f1fb394761354e4f3f30bafa8c4`, set by `account_id` in `wrangler.jsonc`. Never deploy to another account.
+- `.github/workflows/ci.yml`: every PR runs `pnpm check`.
+- `.github/workflows/deploy.yml`: every push/merge to `main` runs `pnpm check`, then `pnpm release:ci` (applies pending D1 migrations, then `wrangler deploy`). Needs repo secret `CLOUDFLARE_API_TOKEN` (timlwhite account: Workers Scripts Edit + D1 Edit).
+- Work on a branch and merge by PR (`gh pr merge --squash`); head branches are deleted on merge. Merging to `main` deploys to production.
 - `pnpm build` writes `dist/client` (assets) and `dist/jazz_setlist/wrangler.json`; `wrangler deploy` picks up that generated config automatically.
 - Local D1 state under `.wrangler/state` is keyed by `database_id`; if the ID changes, rerun `pnpm db:migrate:local`.
 
