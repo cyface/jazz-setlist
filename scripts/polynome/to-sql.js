@@ -21,11 +21,11 @@ export function buildImportSql(data, email, { now = new Date().toISOString(), uu
 
   for (const raw of data.arrangements) {
     const a = arrangementInputSchema.parse(raw)
-    const values = [uuid(), a.title, a.composer, a.musicalKey, a.tempo, a.beatsPerBar, a.feel, a.drumImplement, a.drumsEntry]
+    const values = [uuid(), a.title, a.composer, a.musicalKey, a.tempo, a.beatsPerBar, a.beatUnit, a.feel, a.drumImplement, a.drumsEntry]
       .concat([a.drumsEntryNote, JSON.stringify(a.soloOrder), a.notes, now, now])
       .map(q)
     values.splice(1, 0, user)
-    sql.push(`INSERT INTO arrangements (id, user_id, title, composer, musical_key, tempo, beats_per_bar, feel, drum_implement, drums_entry, drums_entry_note, solo_order, notes, created_at, updated_at)
+    sql.push(`INSERT INTO arrangements (id, user_id, title, composer, musical_key, tempo, beats_per_bar, beat_unit, feel, drum_implement, drums_entry, drums_entry_note, solo_order, notes, created_at, updated_at)
 SELECT ${values.join(', ')}
 WHERE NOT EXISTS (SELECT 1 FROM arrangements WHERE user_id = ${user} AND title = ${q(a.title)} COLLATE NOCASE);`)
   }

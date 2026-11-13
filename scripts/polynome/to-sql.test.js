@@ -23,6 +23,7 @@ const DATA = {
   arrangements: [
     tune('Blue Jar', { tempo: 114, drumsEntry: 'later', drumsEntryNote: 'After the bass intro' }),
     tune('Bernie’s Tune', { soloOrder: [{ type: 'trade', instruments: ['bass', 'drums'], bars: 4 }] }),
+    tune('Afro Blue', { beatsPerBar: 6, beatUnit: 8 }),
   ],
   setlists: [
     { name: 'Malpractice 4/18/26', venue: null, showDate: '2026-04-18', notes: null, archived: true,
@@ -48,9 +49,10 @@ afterAll(() => t.dispose())
 describe('PolyNome import SQL', () => {
   it('imports tunes with their attributes', async () => {
     const { arrangements } = await json('/arrangements')
-    expect(arrangements.map((a) => a.title)).toEqual(['Bernie’s Tune', 'Blue Jar'])
-    expect(arrangements[1]).toMatchObject({ tempo: 114, drumsEntry: 'later', drumsEntryNote: 'After the bass intro' })
-    expect(arrangements[0].soloOrder).toEqual([{ type: 'trade', instruments: ['bass', 'drums'], bars: 4 }])
+    expect(arrangements.map((a) => a.title)).toEqual(['Afro Blue', 'Bernie’s Tune', 'Blue Jar'])
+    expect(arrangements[0]).toMatchObject({ beatsPerBar: 6, beatUnit: 8 })
+    expect(arrangements[2]).toMatchObject({ tempo: 114, beatUnit: 4, drumsEntry: 'later', drumsEntryNote: 'After the bass intro' })
+    expect(arrangements[1].soloOrder).toEqual([{ type: 'trade', instruments: ['bass', 'drums'], bars: 4 }])
   })
 
   it('links setlist items by title and archives all but the active setlist', async () => {
@@ -67,7 +69,7 @@ describe('PolyNome import SQL', () => {
 
   it('is safe to run again', async () => {
     await run(buildImportSql(DATA, EMAIL))
-    expect((await json('/arrangements')).arrangements).toHaveLength(2)
+    expect((await json('/arrangements')).arrangements).toHaveLength(3)
     const { setlists } = await json('/setlists')
     expect(setlists).toHaveLength(2)
     expect(setlists.map((s) => s.tuneCount).sort()).toEqual([1, 2])
@@ -75,7 +77,7 @@ describe('PolyNome import SQL', () => {
 
   it('fails on the first statement when the user has never signed in', async () => {
     await expect(run(buildImportSql(DATA, 'nobody@example.com'))).rejects.toThrow(/NOT NULL/)
-    expect((await json('/arrangements')).arrangements).toHaveLength(2)
+    expect((await json('/arrangements')).arrangements).toHaveLength(3)
   })
 
   it('rejects a setlist that names a tune not in the import', () => {

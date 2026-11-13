@@ -126,11 +126,12 @@ for title, t in sorted(raw['tunes'].items(), key=lambda kv: kv[0].lstrip('’').
     if len(tempos) > 1: notes.append('PolyNome tempos used: ' + ', '.join(map(str, tempos)))
     beats = base['beats'] if isinstance(base['beats'], int) else 4
     if title in ('All Blues', 'Afro Blue'): beats = 6  # "Count 6!!" / "Afro Blue 6/8"
+    beat_unit = 8 if beats in (6, 12) else 4  # PolyNome only stores beats; 6 and 12 are compound (6/8, 12/8) here
     straight = title in STRAIGHT or any(re.search('🇧🇷|📏', o['name']) for o in latest(occs)[:1])
     entry, entry_note = drums_entry(title, occs)
     out.append({
         'title': title, 'composer': None, 'musicalKey': None,
-        'tempo': max(20, min(400, base['tempo'])), 'beatsPerBar': beats,
+        'tempo': max(20, min(400, base['tempo'])), 'beatsPerBar': beats, 'beatUnit': beat_unit,
         'feel': 'straight' if straight else 'swing',
         'drumImplement': implement(occs),
         'drumsEntry': entry, 'drumsEntryNote': entry_note,
@@ -162,7 +163,7 @@ def describe(order):
     return ', '.join(e['instrument'] + (' (over head)' if e['type'] == 'over_head' else '') if e['type'] != 'trade'
                      else '⇄'.join(e['instruments']) + f" {e['bars']}s" for e in order)
 for a in out:
-    print(f"{a['title'][:34]:34} {a['tempo']:>3} {a['beatsPerBar']} {a['feel'][:5]:5} {a['drumImplement'][:5]:5} "
+    print(f"{a['title'][:34]:34} {a['tempo']:>3} {a['beatsPerBar']}/{a['beatUnit']} {a['feel'][:5]:5} {a['drumImplement'][:5]:5} "
           f"{'LATER' if a['drumsEntry'] == 'later' else '':5} {describe(a['soloOrder'])}")
 print()
 for s in sets:
