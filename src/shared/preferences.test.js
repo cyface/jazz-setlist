@@ -10,6 +10,7 @@ describe('resolvePreferences', () => {
   it('keeps valid stored values and fills in missing ones', () => {
     expect(resolvePreferences({ hideDefaults: true, defaults: { drumImplement: 'brushes' } })).toEqual({
       hideDefaults: true,
+      sound: true,
       defaults: { feel: 'swing', drumImplement: 'brushes', drumsEntry: 'top', timeSignature: '4/4' },
     })
   })
@@ -20,6 +21,15 @@ describe('resolvePreferences', () => {
 
   it('ignores invalid stored values', () => {
     expect(resolvePreferences({ hideDefaults: 'yes', defaults: { feel: 'polka' } })).toEqual(DEFAULT_PREFERENCES)
+  })
+
+  it('has sound on by default, keeps it off when stored off, and treats anything else as on', () => {
+    expect(DEFAULT_PREFERENCES.sound).toBe(true)
+    expect(resolvePreferences(null).sound).toBe(true)
+    expect(resolvePreferences({ hideDefaults: true }).sound).toBe(true)
+    expect(resolvePreferences({ sound: false }).sound).toBe(false)
+    expect(resolvePreferences({ sound: 'off' }).sound).toBe(true)
+    expect(resolvePreferences({ sound: 0 }).sound).toBe(true)
   })
 
   it('returns a copy that can be edited', () => {

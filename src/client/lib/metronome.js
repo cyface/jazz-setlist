@@ -53,10 +53,11 @@ export function createMetronome({
   }
 
   function schedule() {
-    const { bpm, beatsPerBar, accent } = getSettings()
+    const { bpm, beatsPerBar, accent, sound = true } = getSettings()
     const plan = planBeats({ nextTime, beat, until: ctx.currentTime + SCHEDULE_AHEAD_S, bpm, beatsPerBar })
     for (const e of plan.events) {
-      click(e.time, isAccent(e.beat, beatsPerBar, accent))
+      // Muted: same timing and beat lights, just no click.
+      if (sound) click(e.time, isAccent(e.beat, beatsPerBar, accent))
       queue.push(e)
     }
     nextTime = plan.nextTime

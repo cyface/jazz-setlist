@@ -106,6 +106,12 @@
   {:else if name === 'break'}
     <path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z" />
     <path d="M16 11h1.5a2 2 0 0 1 0 4H16M8 3.5v2.5M11 3v3M14 3.5v2.5" />
+  {:else if name === 'sound'}
+    <path d="M3.5 9.5h3.6L12 5.5v13l-4.9-4H3.5z" />
+    <path d="M15.6 9.2a4 4 0 0 1 0 5.6M18.4 6.5a7.8 7.8 0 0 1 0 11" />
+  {:else if name === 'muted'}
+    <path d="M3.5 9.5h3.6L12 5.5v13l-4.9-4H3.5z" />
+    <path d="M16 9.5l5 5M21 9.5l-5 5" />
   {:else if name === 'play'}
     <path d="M7 4.5v15l13-7.5z" fill="currentColor" />
   {:else if name === 'stop'}

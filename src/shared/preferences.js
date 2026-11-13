@@ -10,6 +10,8 @@ export const DEFAULTABLE = {
 
 export const DEFAULT_PREFERENCES = Object.freeze({
   hideDefaults: false,
+  /** Metronome clicks. Off, the metronome still counts visually (a silent count-off on stage). */
+  sound: true,
   defaults: Object.freeze({ feel: 'swing', drumImplement: 'sticks', drumsEntry: 'top', timeSignature: '4/4' }),
 })
 
@@ -21,7 +23,8 @@ export function resolvePreferences(stored) {
     if (allowed.includes(value)) defaults[key] = value
   }
   const hideDefaults = typeof stored?.hideDefaults === 'boolean' ? stored.hideDefaults : DEFAULT_PREFERENCES.hideDefaults
-  return { hideDefaults, defaults }
+  const sound = typeof stored?.sound === 'boolean' ? stored.sound : DEFAULT_PREFERENCES.sound
+  return { hideDefaults, sound, defaults }
 }
 
 /** True when list views should leave out this attribute value because it is the user's default.

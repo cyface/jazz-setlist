@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { isAccent, planBeats, tapTempo } from './metronome.js'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createMetronome, isAccent, planBeats, tapTempo } from './metronome.js'
 
 describe('planBeats', () => {
   it('schedules every beat before the horizon at the tempo spacing', () => {
@@ -50,5 +50,54 @@ describe('tapTempo', () => {
     const { taps, bpm } = tapTempo([0, 500], 5000)
     expect(taps).toEqual([5000])
     expect(bpm).toBeNull()
+  })
+})
+
+describe('createMetronome sound', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  /** A fake AudioContext whose clock the test moves, counting the oscillators it makes. */
+  function fakeContext() {
+    const node = () => ({
+      connect: (next) => next,
+      frequency: {},
+      gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },
+      start() {},
+      stop() {},
+    })
+    const ctx = { currentTime: 0, destination: {}, oscillators: 0, resume: async () => {}, close() {}, createGain: node }
+    ctx.createOscillator = () => (ctx.oscillators++, node())
+    return ctx
+  }
+
+  async function play(sound) {
+    let frame
+    vi.stubGlobal('requestAnimationFrame', (fn) => ((frame = fn), 1))
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+    const ctx = fakeContext()
+    const beats = []
+    const metronome = createMetronome({
+      getSettings: () => ({ bpm: 120, beatsPerBar: 4, accent: 'one', sound }),
+      onBeat: (b) => beats.push(b),
+      createContext: () => ctx,
+      holdReload: () => () => {},
+    })
+    await metronome.start()
+    ctx.currentTime = 0.06 // past the first click
+    frame()
+    metronome.destroy()
+    return { oscillators: ctx.oscillators, beats }
+  }
+
+  it('clicks when sound is on', async () => {
+    const { oscillators, beats } = await play(true)
+    expect(oscillators).toBeGreaterThan(0)
+    expect(beats).toEqual([0, -1])
+  })
+
+  it('makes no audio nodes when sound is off, but still lights the beats', async () => {
+    const { oscillators, beats } = await play(false)
+    expect(oscillators).toBe(0)
+    expect(beats).toEqual([0, -1])
   })
 })

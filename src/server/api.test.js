@@ -35,6 +35,7 @@ describe('auth', () => {
     const { user } = await (await t.api('fresh@example.com', 'GET', '/me')).json()
     expect(user.preferences).toEqual({
       hideDefaults: false,
+      sound: true,
       defaults: { feel: 'swing', drumImplement: 'sticks', drumsEntry: 'top', timeSignature: '4/4' },
     })
   })
@@ -47,7 +48,7 @@ describe('auth', () => {
 })
 
 describe('preferences', () => {
-  const prefs = { hideDefaults: true, defaults: { feel: 'swing', drumImplement: 'brushes', drumsEntry: 'top', timeSignature: '6/8' } }
+  const prefs = { hideDefaults: true, sound: true, defaults: { feel: 'swing', drumImplement: 'brushes', drumsEntry: 'top', timeSignature: '6/8' } }
 
   it('saves preferences per user', async () => {
     const res = await t.api('prefs@example.com', 'PUT', '/me/preferences', prefs)
@@ -62,6 +63,20 @@ describe('preferences', () => {
     const res = await t.api('prefs@example.com', 'PUT', '/me/preferences', bossa)
     expect(res.status).toBe(200)
     expect((await res.json()).preferences.defaults.feel).toBe('bossa')
+  })
+
+  it('round-trips sound, and keeps it on when an older client leaves it out', async () => {
+    const off = await t.api('sound@example.com', 'PUT', '/me/preferences', { ...prefs, sound: false })
+    expect((await off.json()).preferences.sound).toBe(false)
+    expect((await (await t.api('sound@example.com', 'GET', '/me')).json()).user.preferences.sound).toBe(false)
+
+    const { sound: _, ...older } = prefs
+    const res = await t.api('sound@example.com', 'PUT', '/me/preferences', older)
+    expect(res.status).toBe(200)
+    expect((await res.json()).preferences.sound).toBe(true)
+
+    const bad = await t.api('sound@example.com', 'PUT', '/me/preferences', { ...prefs, sound: 'loud' })
+    expect(bad.status).toBe(400)
   })
 
   it('rejects invalid preferences', async () => {

@@ -2,6 +2,7 @@
   import { onDestroy } from 'svelte'
   import Icon from './Icon.svelte'
   import { createMetronome, isAccent } from '../lib/metronome.js'
+  import { session, soundOn } from '../lib/session.svelte.js'
 
   let { tempo, beatsPerBar = 4 } = $props()
 
@@ -11,9 +12,11 @@
   let playing = $state(false)
   let active = $state(-1)
   let wakeLock
+  // The preference (Preferences page), unless the mute button here overrode it this session.
+  const sound = $derived(soundOn())
 
   const metronome = createMetronome({
-    getSettings: () => ({ bpm, beatsPerBar, accent }),
+    getSettings: () => ({ bpm, beatsPerBar, accent, sound }),
     onBeat: (beat) => (active = beat),
   })
 
@@ -65,12 +68,24 @@
       <output aria-live="polite"><strong>{bpm}</strong> bpm</output>
       <button onclick={() => nudge(1)} aria-label="Faster">+</button>
     </div>
-    {#if beatsPerBar % 2 === 0}
-      <div class="accent-choice" role="group" aria-label="Accent">
-        <button class:selected={accent === 'one'} aria-pressed={accent === 'one'} onclick={() => (accent = 'one')}>Accent 1</button>
-        <button class:selected={accent === 'two-four'} aria-pressed={accent === 'two-four'} onclick={() => (accent = 'two-four')}>2 &amp; 4</button>
-      </div>
-    {/if}
+    <div class="end">
+      {#if beatsPerBar % 2 === 0}
+        <div class="accent-choice" role="group" aria-label="Accent">
+          <button class:selected={accent === 'one'} aria-pressed={accent === 'one'} onclick={() => (accent = 'one')}>Accent 1</button>
+          <button class:selected={accent === 'two-four'} aria-pressed={accent === 'two-four'} onclick={() => (accent = 'two-four')}>2 &amp; 4</button>
+        </div>
+      {/if}
+      <button
+        class="mute"
+        class:selected={!sound}
+        aria-pressed={!sound}
+        aria-label="Mute metronome"
+        title={sound ? 'Mute (the beat lights keep flashing)' : 'Unmute'}
+        onclick={() => (session.soundOverride = !sound)}
+      >
+        <Icon name={sound ? 'sound' : 'muted'} />
+      </button>
+    </div>
   </div>
 </section>
 
@@ -146,9 +161,19 @@
     font-size: 1.5rem;
     font-variant-numeric: tabular-nums;
   }
+  .end {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
   .accent-choice {
     display: flex;
-    margin-left: auto;
+  }
+  .mute {
+    width: 2.75rem;
+    padding: 0;
+    display: grid;
+    place-items: center;
   }
   .accent-choice button {
     border-radius: 0;
@@ -159,7 +184,8 @@
   .accent-choice button:last-child {
     border-radius: 0 var(--radius) var(--radius) 0;
   }
-  .accent-choice button.selected {
+  .accent-choice button.selected,
+  .mute.selected {
     position: relative;
     border-color: var(--accent);
     color: var(--accent);
@@ -178,9 +204,15 @@
       height: 2.75rem;
     }
     .tempo,
-    .accent-choice {
+    .end {
       flex: 1 0 100%;
       margin-left: 0;
+    }
+    .accent-choice {
+      flex: 1;
+    }
+    .end .mute {
+      margin-left: auto;
     }
     .tempo {
       justify-content: space-between;
