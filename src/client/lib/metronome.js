@@ -1,6 +1,8 @@
 // Web Audio lookahead scheduler: a timer schedules clicks slightly ahead on the
 // audio clock (sample-accurate); requestAnimationFrame lights each beat square
 // when the audio clock reaches that click's time.
+import { holdReload as defaultHoldReload } from './reload-guard.js'
+
 export const LOOKAHEAD_MS = 25
 export const SCHEDULE_AHEAD_S = 0.1
 export const ACCENTS = ['one', 'two-four']
@@ -23,8 +25,15 @@ export function planBeats({ nextTime, beat, until, bpm, beatsPerBar }) {
   return { events, nextTime: time, beat: b }
 }
 
-export function createMetronome({ getSettings, onBeat, createContext = () => new AudioContext() }) {
+export function createMetronome({
+  getSettings,
+  onBeat,
+  createContext = () => new AudioContext(),
+  // A new release must not reload the page mid-tune: hold it until the metronome stops.
+  holdReload = defaultHoldReload,
+}) {
   let ctx
+  let releaseReload
   let timer
   let frame
   let nextTime = 0
@@ -71,12 +80,15 @@ export function createMetronome({ getSettings, onBeat, createContext = () => new
       schedule()
       timer = setInterval(schedule, LOOKAHEAD_MS)
       frame = requestAnimationFrame(draw)
+      releaseReload ??= holdReload()
     },
     stop() {
       clearInterval(timer)
       cancelAnimationFrame(frame)
       queue = []
       onBeat(-1)
+      releaseReload?.()
+      releaseReload = undefined
     },
     destroy() {
       this.stop()
