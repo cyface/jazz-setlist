@@ -12,15 +12,20 @@ export function longpress(node, callback) {
   let onLongPress = callback
   let timer = null
   let start = null
-  let fired = false
+  let pressing = false // a touch or pen press is in progress
+  let fired = false // swallow the click that ends this press
 
   const cancel = () => {
     clearTimeout(timer)
     timer = null
   }
+  const release = () => {
+    cancel()
+    pressing = false
+  }
   const fire = () => {
     cancel()
-    fired = true
+    fired = pressing
     globalThis.navigator?.vibrate?.(15)
     onLongPress?.()
   }
@@ -29,6 +34,7 @@ export function longpress(node, callback) {
     pointerdown(e) {
       fired = false
       if (e.button !== 0 || e.pointerType === 'mouse') return
+      pressing = true
       start = { x: e.clientX, y: e.clientY }
       cancel()
       timer = setTimeout(fire, LONG_PRESS_MS)
@@ -36,12 +42,17 @@ export function longpress(node, callback) {
     pointermove(e) {
       if (timer && Math.hypot(e.clientX - start.x, e.clientY - start.y) > MOVE_TOLERANCE) cancel()
     },
-    pointerup: cancel,
-    pointercancel: cancel,
+    pointerup: release,
+    pointercancel: release,
     pointerleave: cancel,
     contextmenu(e) {
       e.preventDefault()
+      // A touch hold may already have fired; a mouse right-click or the keyboard menu key fires here.
       if (!fired) fire()
+    },
+    // A keyboard click (Enter) after a menu was opened is a real click.
+    keydown() {
+      fired = false
     },
     click(e) {
       if (!fired) return

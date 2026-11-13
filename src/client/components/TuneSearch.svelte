@@ -8,15 +8,17 @@
   let query = $state('')
   let active = $state(0)
   let input = $state()
-  let list = $state()
-
-  // The search sits at the bottom of the setlist: keep the matches on screen as they change.
-  $effect(() => {
-    if (list && results) list.scrollIntoView({ block: 'nearest' })
-  })
+  let wrapper = $state()
+  let focused = $state(false)
 
   const results = $derived(searchTunes(arrangements, query))
-  const open = $derived(query.trim() !== '')
+  const open = $derived(focused && query.trim() !== '')
+
+  // The search sits at the bottom of the setlist: keep the box and its matches on screen as they change.
+  // Scrolling the wrapper (box first) keeps the box visible when the matches don't all fit above a phone keyboard.
+  $effect(() => {
+    if (open && results) wrapper.scrollIntoView({ block: 'nearest' })
+  })
 
   function pick(arrangement) {
     onpick(arrangement)
@@ -41,23 +43,26 @@
   }
 </script>
 
-<div class="tune-search">
+<div class="tune-search" bind:this={wrapper}>
   <input
     bind:this={input}
     bind:value={query}
     oninput={() => (active = 0)}
+    onfocus={() => (focused = true)}
+    onblur={() => (focused = false)}
     {onkeydown}
     type="search"
     placeholder="Add a tune: search by title or composer"
     autocomplete="off"
     role="combobox"
+    aria-autocomplete="list"
     aria-label="Search tunes to add"
     aria-expanded={open}
     aria-controls="{uid}-results"
     aria-activedescendant={open && results.length ? `${uid}-${active}` : undefined}
   />
   {#if open}
-    <ul bind:this={list} id="{uid}-results" class="results" role="listbox" aria-label="Matching tunes">
+    <ul id="{uid}-results" class="results" role="listbox" aria-label="Matching tunes">
       {#each results as a, i (a.id)}
         <li
           id="{uid}-{i}"

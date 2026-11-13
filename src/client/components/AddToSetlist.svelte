@@ -10,6 +10,8 @@
   let busy = $state(false)
   let toast = $state(null) // { text, href?, link?, error? }
   let toastTimer
+  let request = 0 // drops a slow listing that a newer open() has replaced
+  let armed = false // pointer clicks count only after a press that started inside the open menu
 
   const formatDate = (d) =>
     d ? new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : ''
@@ -23,9 +25,13 @@
   /** Opens the actions for `arrangement`: "Add to <setlist>" for each active setlist. */
   export async function open(arrangement) {
     if (busy || dialog.open) return
-    tune = arrangement
+    const mine = ++request
     try {
-      ;({ already, choices } = addMenu(await api.listSetlists(arrangement.id)))
+      const menu = addMenu(await api.listSetlists(arrangement.id))
+      if (mine !== request || dialog.open) return
+      tune = arrangement
+      ;({ already, choices } = menu)
+      armed = false
       dialog.showModal()
     } catch (e) {
       show({ text: e.message, error: true })
@@ -47,12 +53,20 @@
   }
 </script>
 
+<!-- On touch screens the finger that held a row lifts after the menu opens; that click must not pick or dismiss. -->
 <dialog
   bind:this={dialog}
   class="picker"
   aria-labelledby="add-to-setlist-title"
+  onpointerdown={() => (armed = true)}
+  onclickcapture={(e) => {
+    if (armed || e.detail === 0) return // e.detail 0: keyboard
+    e.preventDefault()
+    e.stopPropagation()
+  }}
   onclick={(e) => e.target === dialog && dialog.close()}
 >
+<div class="sheet">
   <h2 id="add-to-setlist-title">{tune?.title}</h2>
   {#if already}
     <p class="already">
@@ -79,6 +93,7 @@
     {/each}
   </ul>
   <button class="cancel" onclick={() => dialog.close()}>{already ? 'Close' : 'Cancel'}</button>
+</div>
 </dialog>
 
 <div class="toast-region" role="status" aria-live="polite">
@@ -92,15 +107,19 @@
 </div>
 
 <style>
+  /* The dialog itself has no padding, so only taps outside the sheet count as the backdrop. */
   .picker {
     width: min(26rem, calc(100vw - 2rem));
     max-height: min(32rem, calc(100dvh - 4rem));
-    padding: 1rem;
+    padding: 0;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--bg-raised);
     color: var(--text);
     box-shadow: 0 12px 32px var(--shadow);
+  }
+  .sheet {
+    padding: 1rem;
   }
   .picker::backdrop {
     background: var(--backdrop);

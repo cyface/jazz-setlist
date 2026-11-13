@@ -64,20 +64,28 @@
     listEl?.querySelector('.row.active')?.scrollIntoView({ block: 'nearest' })
   }
 
-  async function saveItems() {
+  // Saves replace all items, so they run one at a time, in order, each sending the items as they are by then.
+  let saveQueue = Promise.resolve()
+  let pendingSaves = 0
+  function saveItems() {
+    pendingSaves += 1
     saving = true
     error = ''
-    try {
-      await api.saveSetlistItems(
-        id,
-        items.map((i) => (i.kind === 'tune' ? { kind: 'tune', arrangementId: i.arrangement.id } : { kind: 'break', label: i.label })),
+    saveQueue = saveQueue
+      .then(() =>
+        api.saveSetlistItems(
+          id,
+          items.map((i) => (i.kind === 'tune' ? { kind: 'tune', arrangementId: i.arrangement.id } : { kind: 'break', label: i.label })),
+        ),
       )
-    } catch (e) {
-      error = e.message
-      load()
-    } finally {
-      saving = false
-    }
+      .catch((e) => {
+        error = e.message
+        load()
+      })
+      .finally(() => {
+        pendingSaves -= 1
+        saving = pendingSaves > 0
+      })
   }
 
   function addTune(arrangement) {

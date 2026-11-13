@@ -150,6 +150,18 @@ describe('setlists', () => {
     expect(list.setlists.find((s) => s.id === setlist.id).tuneCount).toBe(2)
   })
 
+  it('saves a setlist longer than one D1 statement can bind', async () => {
+    // Regression: 17+ items in one INSERT went over D1's 100 bound values and the save failed.
+    const a = await createArrangement(TIM)
+    const { setlist } = await (await t.api(TIM, 'POST', '/setlists', { name: 'Long gig' })).json()
+    const items = Array.from({ length: 40 }, (_, i) => (i % 10 === 9 ? { kind: 'break', label: `break ${i}` } : { kind: 'tune', arrangementId: a.id }))
+    const res = await t.api(TIM, 'PUT', `/setlists/${setlist.id}/items`, { items })
+    expect(res.status).toBe(200)
+    const saved = (await res.json()).setlist.items
+    expect(saved).toHaveLength(40)
+    expect(saved.map((i) => i.label ?? i.kind)).toEqual(items.map((i) => i.label ?? i.kind))
+  })
+
   it('replaces items on each save', async () => {
     const a = await createArrangement(TIM)
     const { setlist } = await (await t.api(TIM, 'POST', '/setlists', { name: 'Replace' })).json()
@@ -223,6 +235,14 @@ describe('setlists', () => {
     await t.api(TIM, 'POST', `/setlists/${empty.id}/items`, { arrangementId: a.id })
     const twice = await (await t.api(TIM, 'POST', `/setlists/${empty.id}/items`, { arrangementId: a.id })).json()
     expect(twice.setlist.items.map((i) => i.arrangement.title)).toEqual(['Afro Blue', 'Afro Blue'])
+  })
+
+  it('stops appending at the setlist item limit', async () => {
+    const a = await createArrangement(TIM)
+    const { setlist } = await (await t.api(TIM, 'POST', '/setlists', { name: 'Full' })).json()
+    const items = Array.from({ length: 200 }, () => ({ kind: 'break', label: null }))
+    expect((await t.api(TIM, 'PUT', `/setlists/${setlist.id}/items`, { items })).status).toBe(200)
+    expect((await t.api(TIM, 'POST', `/setlists/${setlist.id}/items`, { arrangementId: a.id })).status).toBe(400)
   })
 
   it('reports which setlists already have a tune', async () => {

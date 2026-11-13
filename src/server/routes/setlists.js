@@ -2,8 +2,12 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { arrangements, setlistItems, setlists } from '../../db/schema.js'
-import { setlistAddTuneSchema, setlistArchiveSchema, setlistInputSchema, setlistItemsSchema } from '../../shared/validation.js'
+import { MAX_SETLIST_ITEMS, setlistAddTuneSchema, setlistArchiveSchema, setlistInputSchema, setlistItemsSchema } from '../../shared/validation.js'
 import { notFound, now, omitUserId, parseBody } from '../lib/http.js'
+
+// D1 allows at most 100 bound values per statement; a setlist item row binds 6.
+const ITEMS_PER_INSERT = Math.floor(100 / 6)
+const chunks = (rows, size) => Array.from({ length: Math.ceil(rows.length / size) }, (_, i) => rows.slice(i * size, (i + 1) * size))
 
 const owned = (c, id) => and(eq(setlists.id, id), eq(setlists.userId, c.get('user').id))
 
@@ -112,7 +116,7 @@ export const setlistsRoutes = new Hono()
     }))
     await db.batch([
       db.delete(setlistItems).where(eq(setlistItems.setlistId, id)),
-      ...(rows.length ? [db.insert(setlistItems).values(rows)] : []),
+      ...chunks(rows, ITEMS_PER_INSERT).map((chunk) => db.insert(setlistItems).values(chunk)),
       db.update(setlists).set({ updatedAt: now() }).where(eq(setlists.id, id)),
     ])
     return c.json({ setlist: await loadSetlist(c, id) })
@@ -129,6 +133,12 @@ export const setlistsRoutes = new Hono()
       .where(and(eq(arrangements.id, arrangementId), eq(arrangements.userId, c.get('user').id)))
       .get()
     if (!arrangement) throw new HTTPException(400, { message: 'Unknown arrangement' })
+    const { count } = await db
+      .select({ count: sql`count(*)`.mapWith(Number) })
+      .from(setlistItems)
+      .where(eq(setlistItems.setlistId, id))
+      .get()
+    if (count >= MAX_SETLIST_ITEMS) throw new HTTPException(400, { message: `A setlist holds at most ${MAX_SETLIST_ITEMS} items` })
 
     await db.batch([
       db.insert(setlistItems).values({

@@ -108,6 +108,20 @@ describe('longpress', () => {
     expect(onLongPress).toHaveBeenCalledTimes(2)
   })
 
+  it('does not swallow the next click after a right-click or keyboard context menu', () => {
+    fire('contextmenu')
+    expect(onLongPress).toHaveBeenCalledOnce()
+    expect(fire('click').defaultPrevented).toBe(false)
+  })
+
+  it('lets a keyboard Enter through after a touch hold that ended without a click', () => {
+    fire('pointerdown')
+    vi.advanceTimersByTime(LONG_PRESS_MS)
+    fire('pointerup')
+    fire('keydown')
+    expect(fire('click').defaultPrevented).toBe(false)
+  })
+
   it('uses the latest callback and stops listening when destroyed', () => {
     const next = vi.fn()
     action.update(next)
