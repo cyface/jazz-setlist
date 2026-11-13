@@ -76,6 +76,7 @@
 
 <style>
   .metronome {
+    container: metronome / inline-size;
     display: grid;
     gap: 1rem;
     padding: 1rem;
@@ -164,8 +165,9 @@
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 12%, var(--bg-raised));
   }
-  /* Phones: a big start/stop on its own line, easy to hit on a gig; the tempo row goes below. */
-  @media (max-width: 767.98px) {
+  /* Narrow metronome (phones, and the tune detail column on desktop): play/tempo/accent don't fit
+     on one row, so stack them: a big start/stop that's easy to hit on a gig, then tempo, then accent. */
+  @container metronome (max-width: 32rem) {
     .play {
       flex: 1 0 100%;
       height: 4.5rem;
@@ -175,7 +177,6 @@
       width: 2.75rem;
       height: 2.75rem;
     }
-    /* Tempo and accent don't fit side by side at phone widths; each takes a full row. */
     .tempo,
     .accent-choice {
       flex: 1 0 100%;
