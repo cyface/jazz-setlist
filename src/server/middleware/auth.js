@@ -3,6 +3,7 @@ import { HTTPException } from 'hono/http-exception'
 import { eq } from 'drizzle-orm'
 import { createDb } from '../../db/index.js'
 import { users } from '../../db/schema.js'
+import { resolvePreferences } from '../../shared/preferences.js'
 
 const isEmail = (v) => typeof v === 'string' && v.includes('@')
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1'])
@@ -14,7 +15,7 @@ export async function findOrProvisionUser(db, email) {
     .onConflictDoNothing({ target: users.email })
   const user = await db.select().from(users).where(eq(users.email, email)).get()
   if (!user) throw new HTTPException(503, { message: 'Database unavailable' })
-  return { id: user.id, email: user.email }
+  return { id: user.id, email: user.email, preferences: resolvePreferences(user.preferences) }
 }
 
 /**

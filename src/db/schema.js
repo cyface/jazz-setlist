@@ -4,6 +4,8 @@ import { DRUM_IMPLEMENTS, DRUMS_ENTRIES, FEELS } from '../shared/attributes.js'
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
+  /** JSON, see src/shared/preferences.js; null = all defaults. */
+  preferences: text('preferences', { mode: 'json' }),
   createdAt: text('created_at').notNull(),
 })
 
@@ -19,6 +21,8 @@ export const arrangements = sqliteTable(
     musicalKey: text('musical_key'),
     tempo: integer('tempo').notNull(),
     beatsPerBar: integer('beats_per_bar').notNull().default(4),
+    /** Time signature denominator: 4 for 4/4, 8 for 6/8. */
+    beatUnit: integer('beat_unit').notNull().default(4),
     feel: text('feel', { enum: FEELS }).notNull(),
     drumImplement: text('drum_implement', { enum: DRUM_IMPLEMENTS }).notNull(),
     drumsEntry: text('drums_entry', { enum: DRUMS_ENTRIES }).notNull(),

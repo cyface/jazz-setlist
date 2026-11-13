@@ -1,0 +1,1 @@
+ALTER TABLE `arrangements` ADD `beat_unit` integer DEFAULT 4 NOT NULL;

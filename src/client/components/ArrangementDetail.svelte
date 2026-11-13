@@ -12,7 +12,7 @@
     {#if heading}<p class="eyebrow">{heading}</p>{/if}
     <h2>{arrangement.title}</h2>
     <p class="meta">
-      {[arrangement.composer, arrangement.musicalKey && `Key of ${arrangement.musicalKey}`, `${arrangement.beatsPerBar}/4`]
+      {[arrangement.composer, arrangement.musicalKey && `Key of ${arrangement.musicalKey}`]
         .filter(Boolean)
         .join(' · ')}
     </p>
