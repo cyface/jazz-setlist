@@ -75,7 +75,7 @@
         >
           <span class="title">{a.title}</span>
           {#if inSetlist.has(a.id)}<span class="muted in">in setlist</span>{/if}
-          <span class="muted tempo">♩ = {a.tempo}</span>
+          <span class="muted tempo" title="Tempo (bpm)">{a.tempo}<span class="sr-only">&nbsp;bpm</span></span>
         </li>
       {:else}
         <li class="muted none" role="presentation">No tunes match “{query.trim()}”.</li>
@@ -121,7 +121,9 @@
     font-size: 0.85rem;
   }
   .tempo {
+    min-width: 3ch;
     margin-left: auto;
+    text-align: right;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }

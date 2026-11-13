@@ -192,8 +192,10 @@
               <button class="select" onclick={() => select(item.key)} aria-current={item.key === (selectedKey ?? lastKey) ? 'true' : undefined}>
                 <span class="n">{item.number}</span>
                 <span class="title">{item.arrangement.title}</span>
-                <span class="tempo">♩ = {item.arrangement.tempo}</span>
-                <TuneBadges arrangement={item.arrangement} compact />
+                <span class="meta">
+                  <TuneBadges arrangement={item.arrangement} compact />
+                  <span class="tempo" title="Tempo (bpm)">{item.arrangement.tempo}<span class="sr-only">&nbsp;bpm</span></span>
+                </span>
               </button>
               {@render rowActions(index)}
             </li>
@@ -317,11 +319,21 @@
     font-variant-numeric: tabular-nums;
   }
   .title {
+    flex: 1 1 auto; /* fills the row so the tempo sits at the right edge */
     font-weight: 700;
   }
+  /* Badges + tempo wrap together and stay at the right edge. */
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-left: auto;
+  }
   .tempo {
+    min-width: 3ch; /* right-aligned in a fixed width so 2- and 3-digit tempos line up */
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
+    text-align: right;
   }
   .row-actions {
     display: flex;
