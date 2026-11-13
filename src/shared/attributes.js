@@ -1,4 +1,4 @@
-export const FEELS = ['swing', 'straight', 'bossa']
+export const FEELS = ['swing', 'straight', 'bossa', 'latin']
 export const DRUM_IMPLEMENTS = ['sticks', 'brushes']
 export const DRUMS_ENTRIES = ['top', 'later']
 export const SOLO_TYPES = ['solo', 'trade', 'over_head']
@@ -61,7 +61,7 @@ export function soloEntryIcons(entry) {
 }
 
 export const LABELS = {
-  feel: { swing: 'Swing', straight: 'Straight', bossa: 'Bossa' },
+  feel: { swing: 'Swing', straight: 'Straight', bossa: 'Bossa', latin: 'Latin' },
   drumImplement: { sticks: 'Sticks', brushes: 'Brushes' },
   drumsEntry: { top: 'Drums from the top', later: 'Drums come in later' },
   soloType: { solo: 'Solo', trade: 'Trade', over_head: 'Over the head out' },

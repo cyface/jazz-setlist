@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 const TRANSFORM = new URL('./transform.py', import.meta.url).pathname
 
 /** One PolyNome preset use, in extract.py's raw.json shape. */
-const occ = (name, when = 1) => ({ name, cue: '', tempo: 120, beats: 4, notes: [], when, setlist: null })
+const occ = (name, when = 1, cue = '') => ({ name, cue, tempo: 120, beats: 4, notes: [], when, setlist: null })
 
 const RAW = {
   tunes: {
@@ -20,17 +20,26 @@ const RAW = {
     'Red Clay': { standalone: [occ('Red Clay')], setlist: [] },
     'So What': { standalone: [occ('So What 📏')], setlist: [] },
     'Bags’ Groove': { standalone: [occ('Bags’ Groove')], setlist: [] },
+    // In LATIN: latin even though its newest preset says 📏 (as in the real backup).
+    'Song for My Father': {
+      standalone: [occ('Song for My Father 🎤/🐟 LATIN', 1, ' 🎤/🐟 LATIN'), occ('Song for My Father🎤📏💃', 2, '🎤📏💃')],
+      setlist: [],
+    },
+    'Chitlins con Carne': { standalone: [occ('Chitlins Con Carne - 3/2 CLAVE', 1, ' - 3/2 CLAVE')], setlist: [] },
+    // "LATIN" in the newest preset name wins over the STRAIGHT set.
+    'Watermelon Man': { standalone: [occ('Watermelon Man - LATIN', 1, ' - LATIN')], setlist: [] },
   },
   setlists: [{ name: 'Gig', created: 'November 2026', notes: null, items: [] }],
 }
 
-let dir, feels
+let dir, feels, notes
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), 'polynome-'))
   writeFileSync(join(dir, 'raw.json'), JSON.stringify(RAW))
   execFileSync('python3', ['-I', TRANSFORM, join(dir, 'raw.json'), join(dir, 'import.json')], { stdio: 'pipe' })
   const { arrangements } = JSON.parse(readFileSync(join(dir, 'import.json'), 'utf8'))
   feels = Object.fromEntries(arrangements.map((a) => [a.title, a.feel]))
+  notes = Object.fromEntries(arrangements.map((a) => [a.title, a.notes]))
 })
 afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
@@ -46,6 +55,21 @@ describe('transform.py feel', () => {
   it('gives straight for 📏 or a title in STRAIGHT', () => {
     expect(feels['So What']).toBe('straight')
     expect(feels['Red Clay']).toBe('straight')
+  })
+
+  it('gives latin for a title in LATIN, even when its newest preset says 📏', () => {
+    expect(feels['Song for My Father']).toBe('latin')
+    expect(feels['Chitlins con Carne']).toBe('latin')
+  })
+
+  it('gives latin for "LATIN" in the newest preset name, even for a STRAIGHT title', () => {
+    expect(feels['Watermelon Man']).toBe('latin')
+  })
+
+  it('leaves the LATIN cue out of the notes', () => {
+    expect(notes['Watermelon Man'] ?? '').not.toMatch(/latin/i)
+    expect(notes['Song for My Father']).not.toMatch(/latin/i)
+    expect(notes['Song for My Father']).toMatch(/PolyNome cues:/)
   })
 
   it('gives swing otherwise, ignoring 🇧🇷 on older presets', () => {
