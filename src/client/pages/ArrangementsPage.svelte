@@ -1,8 +1,10 @@
 <script>
+  import AddToSetlist from '../components/AddToSetlist.svelte'
   import ArrangementDetail from '../components/ArrangementDetail.svelte'
   import Icon from '../components/Icon.svelte'
   import TuneBadges from '../components/TuneBadges.svelte'
   import { api } from '../lib/api.js'
+  import { longpress } from '../lib/longpress.js'
 
   let { selectedId } = $props()
 
@@ -10,6 +12,7 @@
   let loading = $state(true)
   let error = $state('')
   let query = $state('')
+  let addToSetlist = $state()
 
   const filtered = $derived(
     arrangements.filter((a) =>
@@ -42,7 +45,13 @@
       <ul class="rows">
         {#each filtered as a (a.id)}
           <li>
-            <a href="#/arrangements/{a.id}" class="row" class:active={a.id === selectedId}>
+            <a
+              href="#/arrangements/{a.id}"
+              class="row"
+              class:active={a.id === selectedId}
+              use:longpress={() => addToSetlist.open(a)}
+              title="Right-click to add to a setlist"
+            >
               <span class="title">{a.title}</span>
               <span class="tempo">♩ = {a.tempo}</span>
               <TuneBadges arrangement={a} compact />
@@ -53,15 +62,15 @@
     {/if}
   </section>
 
-  <section class="detail-pane">
-    {#if selected}
+  {#if selected}
+    <section class="detail-pane">
       <a class="back" href="#/"><Icon name="left" size={18} /> All tunes</a>
       <ArrangementDetail arrangement={selected} />
-    {:else if !loading}
-      <p class="muted placeholder">Select a tune to see its arrangement and start the metronome.</p>
-    {/if}
-  </section>
+    </section>
+  {/if}
 </div>
+
+<AddToSetlist bind:this={addToSetlist} />
 
 <style>
   .title {
@@ -75,9 +84,9 @@
   }
   .row {
     flex-wrap: wrap;
+    /* Holding a row on a touch screen adds the tune to a setlist: no text selection or iOS link preview. */
+    -webkit-touch-callout: none;
+    user-select: none;
     min-height: 3.25rem; /* rows keep one height when "hide defaults" leaves no badges */
-  }
-  .placeholder {
-    padding: 2rem 0;
   }
 </style>

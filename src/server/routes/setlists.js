@@ -2,8 +2,12 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { arrangements, setlistItems, setlists } from '../../db/schema.js'
-import { setlistArchiveSchema, setlistInputSchema, setlistItemsSchema } from '../../shared/validation.js'
+import { MAX_SETLIST_ITEMS, setlistAddTuneSchema, setlistArchiveSchema, setlistInputSchema, setlistItemsSchema } from '../../shared/validation.js'
 import { notFound, now, omitUserId, parseBody } from '../lib/http.js'
+
+// D1 allows at most 100 bound values per statement; a setlist item row binds 6.
+const ITEMS_PER_INSERT = Math.floor(100 / 6)
+const chunks = (rows, size) => Array.from({ length: Math.ceil(rows.length / size) }, (_, i) => rows.slice(i * size, (i + 1) * size))
 
 const owned = (c, id) => and(eq(setlists.id, id), eq(setlists.userId, c.get('user').id))
 
@@ -28,6 +32,8 @@ async function loadSetlist(c, id) {
 
 export const setlistsRoutes = new Hono()
   .get('/', async (c) => {
+    // ?contains=<arrangementId> adds hasTune: whether each setlist already has that tune.
+    const contains = c.req.query('contains')
     const rows = await c
       .get('db')
       .select({
@@ -38,6 +44,9 @@ export const setlistsRoutes = new Hono()
         archivedAt: setlists.archivedAt,
         updatedAt: setlists.updatedAt,
         tuneCount: sql`(select count(*) from setlist_items si where si.setlist_id = "setlists"."id" and si.kind = 'tune')`.mapWith(Number),
+        ...(contains && {
+          hasTune: sql`exists(select 1 from setlist_items si where si.setlist_id = "setlists"."id" and si.arrangement_id = ${contains})`.mapWith(Boolean),
+        }),
       })
       .from(setlists)
       .where(eq(setlists.userId, c.get('user').id))
@@ -107,10 +116,42 @@ export const setlistsRoutes = new Hono()
     }))
     await db.batch([
       db.delete(setlistItems).where(eq(setlistItems.setlistId, id)),
-      ...(rows.length ? [db.insert(setlistItems).values(rows)] : []),
+      ...chunks(rows, ITEMS_PER_INSERT).map((chunk) => db.insert(setlistItems).values(chunk)),
       db.update(setlists).set({ updatedAt: now() }).where(eq(setlists.id, id)),
     ])
     return c.json({ setlist: await loadSetlist(c, id) })
+  })
+  .post('/:id/items', async (c) => {
+    const { arrangementId } = await parseBody(c, setlistAddTuneSchema)
+    const db = c.get('db')
+    const id = c.req.param('id')
+    const setlist = await db.select({ id: setlists.id }).from(setlists).where(owned(c, id)).get()
+    if (!setlist) throw notFound('Setlist')
+    const arrangement = await db
+      .select({ id: arrangements.id })
+      .from(arrangements)
+      .where(and(eq(arrangements.id, arrangementId), eq(arrangements.userId, c.get('user').id)))
+      .get()
+    if (!arrangement) throw new HTTPException(400, { message: 'Unknown arrangement' })
+    const { count } = await db
+      .select({ count: sql`count(*)`.mapWith(Number) })
+      .from(setlistItems)
+      .where(eq(setlistItems.setlistId, id))
+      .get()
+    if (count >= MAX_SETLIST_ITEMS) throw new HTTPException(400, { message: `A setlist holds at most ${MAX_SETLIST_ITEMS} items` })
+
+    await db.batch([
+      db.insert(setlistItems).values({
+        id: crypto.randomUUID(),
+        setlistId: id,
+        // After the last item, computed in the INSERT so concurrent adds can't pick the same position.
+        position: sql`(select coalesce(max(${setlistItems.position}), -1) + 1 from ${setlistItems} where ${setlistItems.setlistId} = ${id})`,
+        kind: 'tune',
+        arrangementId,
+      }),
+      db.update(setlists).set({ updatedAt: now() }).where(eq(setlists.id, id)),
+    ])
+    return c.json({ setlist: await loadSetlist(c, id) }, 201)
   })
   .delete('/:id', async (c) => {
     const [row] = await c

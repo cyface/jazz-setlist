@@ -51,6 +51,8 @@ export const setlistInputSchema = z.object({
 
 export const setlistArchiveSchema = z.object({ archived: z.boolean() })
 
+export const MAX_SETLIST_ITEMS = 200
+
 export const setlistItemsSchema = z.object({
   items: z
     .array(
@@ -59,8 +61,11 @@ export const setlistItemsSchema = z.object({
         z.object({ kind: z.literal('break'), label: optionalText(100) }),
       ]),
     )
-    .max(200),
+    .max(MAX_SETLIST_ITEMS),
 })
+
+/** Appends one tune to the end of a setlist (POST /api/setlists/:id/items). */
+export const setlistAddTuneSchema = z.object({ arrangementId: z.string().min(1) })
 
 /** Per-user preferences (PUT /api/me/preferences). */
 export const preferencesSchema = z.object({

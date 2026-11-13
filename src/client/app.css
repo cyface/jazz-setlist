@@ -463,9 +463,15 @@ main {
 
 .split {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-  gap: 2rem;
+  /* With a tune selected, the detail pane is 35% of the width, between 18rem (fits the metronome) and 28rem. */
+  grid-template-columns: minmax(0, 1fr) clamp(18rem, 35%, 28rem);
+  gap: 1.5rem;
   align-items: start;
+}
+
+/* Nothing selected: the list gets the whole width (no placeholder column). */
+.split:not(.has-selection) {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .detail-pane {
@@ -473,9 +479,13 @@ main {
   top: 1rem;
 }
 
-.back,
-.back-button {
-  display: none;
+/* Closes the detail pane: back to the list on phones, back to the full-width list on wider screens. */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  text-decoration: none;
 }
 
 @media (max-width: 800px) {
@@ -485,21 +495,8 @@ main {
   .split.has-selection .list-pane {
     display: none;
   }
-  .split:not(.has-selection) .detail-pane {
-    display: none;
-  }
   .detail-pane {
     position: static;
-  }
-  .back {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    margin-bottom: 0.75rem;
-    text-decoration: none;
-  }
-  .back-button {
-    display: inline-flex;
   }
 }
 

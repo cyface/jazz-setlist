@@ -30,11 +30,13 @@ export const api = {
   updateArrangement: (id, data) => request('PUT', `/arrangements/${id}`, data).then((r) => r.arrangement),
   deleteArrangement: (id) => request('DELETE', `/arrangements/${id}`),
 
-  listSetlists: () => request('GET', '/setlists').then((r) => r.setlists),
+  listSetlists: (contains) =>
+    request('GET', contains ? `/setlists?contains=${encodeURIComponent(contains)}` : '/setlists').then((r) => r.setlists),
   getSetlist: (id) => request('GET', `/setlists/${id}`).then((r) => r.setlist),
   createSetlist: (data) => request('POST', '/setlists', data).then((r) => r.setlist),
   updateSetlist: (id, data) => request('PUT', `/setlists/${id}`, data).then((r) => r.setlist),
   setSetlistArchived: (id, archived) => request('PUT', `/setlists/${id}/archived`, { archived }).then((r) => r.setlist),
+  addTuneToSetlist: (id, arrangementId) => request('POST', `/setlists/${id}/items`, { arrangementId }).then((r) => r.setlist),
   saveSetlistItems: (id, items) => request('PUT', `/setlists/${id}/items`, { items }).then((r) => r.setlist),
   deleteSetlist: (id) => request('DELETE', `/setlists/${id}`),
 }
