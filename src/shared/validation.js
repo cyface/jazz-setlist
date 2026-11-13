@@ -62,6 +62,9 @@ export const setlistItemsSchema = z.object({
     .max(200),
 })
 
+/** Appends one tune to the end of a setlist (POST /api/setlists/:id/items). */
+export const setlistAddTuneSchema = z.object({ arrangementId: z.string().min(1) })
+
 /** Per-user preferences (PUT /api/me/preferences). */
 export const preferencesSchema = z.object({
   hideDefaults: z.boolean(),

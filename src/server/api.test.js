@@ -205,6 +205,52 @@ describe('setlists', () => {
     expect(restored.items).toHaveLength(1)
   })
 
+  it('appends a tune to the end of a setlist', async () => {
+    const a = await createArrangement(TIM, { title: 'Afro Blue' })
+    const b = await createArrangement(TIM, { title: 'Footprints' })
+    const { setlist } = await (await t.api(TIM, 'POST', '/setlists', { name: 'Append' })).json()
+    await t.api(TIM, 'PUT', `/setlists/${setlist.id}/items`, {
+      items: [{ kind: 'tune', arrangementId: a.id }, { kind: 'break', label: null }],
+    })
+
+    const res = await t.api(TIM, 'POST', `/setlists/${setlist.id}/items`, { arrangementId: b.id })
+    expect(res.status).toBe(201)
+    const { items } = (await res.json()).setlist
+    expect(items.map((i) => i.arrangement?.title ?? 'break')).toEqual(['Afro Blue', 'break', 'Footprints'])
+
+    // Adding to an empty setlist starts at the top; the same tune can be added twice.
+    const { setlist: empty } = await (await t.api(TIM, 'POST', '/setlists', { name: 'Empty' })).json()
+    await t.api(TIM, 'POST', `/setlists/${empty.id}/items`, { arrangementId: a.id })
+    const twice = await (await t.api(TIM, 'POST', `/setlists/${empty.id}/items`, { arrangementId: a.id })).json()
+    expect(twice.setlist.items.map((i) => i.arrangement.title)).toEqual(['Afro Blue', 'Afro Blue'])
+  })
+
+  it('reports which setlists already have a tune', async () => {
+    const a = await createArrangement(OTHER, { title: 'Afro Blue' })
+    const b = await createArrangement(OTHER, { title: 'Footprints' })
+    const { setlist: withA } = await (await t.api(OTHER, 'POST', '/setlists', { name: 'Has it' })).json()
+    const { setlist: without } = await (await t.api(OTHER, 'POST', '/setlists', { name: 'Lacks it' })).json()
+    await t.api(OTHER, 'POST', `/setlists/${withA.id}/items`, { arrangementId: a.id })
+    await t.api(OTHER, 'POST', `/setlists/${without.id}/items`, { arrangementId: b.id })
+
+    const { setlists } = await (await t.api(OTHER, 'GET', `/setlists?contains=${a.id}`)).json()
+    const has = Object.fromEntries(setlists.map((s) => [s.name, s.hasTune]))
+    expect(has).toMatchObject({ 'Has it': true, 'Lacks it': false })
+    // Without the parameter the field is left out.
+    const plain = (await (await t.api(OTHER, 'GET', '/setlists')).json()).setlists
+    expect(plain.every((s) => !('hasTune' in s))).toBe(true)
+  })
+
+  it("won't append another user's tune or to another user's setlist", async () => {
+    const theirs = await createArrangement(OTHER)
+    const { setlist } = await (await t.api(TIM, 'POST', '/setlists', { name: 'Mine' })).json()
+    expect((await t.api(TIM, 'POST', `/setlists/${setlist.id}/items`, { arrangementId: theirs.id })).status).toBe(400)
+    expect((await t.api(OTHER, 'POST', `/setlists/${setlist.id}/items`, { arrangementId: theirs.id })).status).toBe(404)
+    expect((await t.api(TIM, 'POST', `/setlists/${setlist.id}/items`, {})).status).toBe(400)
+    const { setlist: after } = await (await t.api(TIM, 'GET', `/setlists/${setlist.id}`)).json()
+    expect(after.items).toEqual([])
+  })
+
   it('rejects an invalid archive request', async () => {
     const { setlist } = await (await t.api(TIM, 'POST', '/setlists', { name: 'Bad archive' })).json()
     expect((await t.api(TIM, 'PUT', `/setlists/${setlist.id}/archived`, { archived: 'yes' })).status).toBe(400)

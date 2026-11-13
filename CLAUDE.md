@@ -66,13 +66,15 @@ pnpm import:polynome <backup.pln> <email> [--local|--remote]   # PolyNome backup
 
 ## API
 
-`/api/me` (user + preferences), `PUT /api/me/preferences`, `/api/arrangements[/:id]` (GET/POST/PUT/DELETE), `/api/setlists[/:id]` (GET/POST/PUT/DELETE), `PUT /api/setlists/:id/items`, `PUT /api/setlists/:id/archived` (`{ archived: boolean }`). Errors are `{ error }` or `{ error, issues: [{path, message}] }` on 400.
+`/api/me` (user + preferences), `PUT /api/me/preferences`, `/api/arrangements[/:id]` (GET/POST/PUT/DELETE), `/api/setlists[/:id]` (GET/POST/PUT/DELETE), `PUT /api/setlists/:id/items` (replace all), `POST /api/setlists/:id/items` (`{ arrangementId }`, appends one tune), `PUT /api/setlists/:id/archived` (`{ archived: boolean }`). Errors are `{ error }` or `{ error, issues: [{path, message}] }` on 400.
 
 ## Frontend conventions
 
 - Layout mirrors cyface-invoice's AppShell: `Sidebar.svelte` is a drawer opened by the top bar's hamburger below 768px, an icon rail from 768px and a full sidebar from 1024px; its nav is Tunes / Setlists / Preferences, with the app version (`__APP_VERSION__`) at the bottom. `Topbar.svelte` has the theme toggle and the user avatar menu (email, Preferences, Log out via `/cdn-cgi/access/logout`).
 - `lib/session.svelte.js` holds the signed-in user and preferences (`$state`); `App.svelte` loads it before rendering any page, so pages can read `session.preferences` synchronously.
 
+- Tunes list: holding a row on a touch screen (or right-clicking it with a mouse) opens an action menu (`lib/longpress.js` action, `AddToSetlist.svelte`) with "Add to <setlist>" for each active setlist (`addMenu()` in `lib/add-to-setlist.js`, using `GET /api/setlists?contains=<id>` → `hasTune`); nothing is added until one is picked. If the only active setlist already has the tune, the menu says so instead of offering it. With no tune selected, list pages use the full width; the detail column appears only for a selection.
+- Setlist page: Next shows the next tune's name (and its set when it starts a new one). The last tune opened stays highlighted and scrolled into view after going back to the list; `lib/setlist-position.js` keeps it per setlist in sessionStorage as index + arrangement id, since item ids change on every save. Tunes are added with `TuneSearch.svelte` (combobox; ranking in `searchTunes()`, `lib/search.js`, ignores case, accents and punctuation). Archive/Restore is in the setlist's Edit form, away from the toolbar.
 - Icons are hand-drawn inline SVG in `src/client/components/Icon.svelte`; every attribute shows as an icon (with label, or with tooltip/`aria-label` in compact mode) via `TuneBadges.svelte`.
 - Metronome: `src/client/lib/metronome.js` is a Web Audio lookahead scheduler (clicks scheduled on the audio clock, beat squares lit by `requestAnimationFrame`). Keep timing logic in pure functions (`planBeats`, `isAccent`, `tapTempo`) and test them. Space bar toggles play; screen wake lock is held while playing.
 - Dark mode is required. Every color is a token on `:root` in `app.css` written as `light-dark(<light>, <dark>)`; never hardcode colors in components, and give every new token both values.

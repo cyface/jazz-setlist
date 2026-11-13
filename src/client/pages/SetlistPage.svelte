@@ -1,9 +1,12 @@
 <script>
+  import { tick } from 'svelte'
   import ArrangementDetail from '../components/ArrangementDetail.svelte'
   import Icon from '../components/Icon.svelte'
   import TuneBadges from '../components/TuneBadges.svelte'
+  import TuneSearch from '../components/TuneSearch.svelte'
   import { api } from '../lib/api.js'
   import { navigate } from '../lib/router.js'
+  import { recallPosition, rememberPosition } from '../lib/setlist-position.js'
   import { moveItem, numberSets } from '../../shared/setlist.js'
 
   let { id } = $props()
@@ -14,7 +17,9 @@
   let error = $state('')
   let saving = $state(false)
   let selectedKey = $state(null)
-  let toAdd = $state('')
+  /** The tune opened most recently; stays highlighted in the list after going back to it. */
+  let lastKey = $state(null)
+  let listEl = $state()
   let editingInfo = $state(false)
   let info = $state({ name: '', showDate: '', venue: '', notes: '' })
 
@@ -22,6 +27,8 @@
   const tunes = $derived(numbered.filter((i) => i.kind === 'tune'))
   const selectedIndex = $derived(tunes.findIndex((t) => t.key === selectedKey))
   const selected = $derived(tunes[selectedIndex])
+  const next = $derived(tunes[selectedIndex + 1])
+  const inSetlist = $derived(new Set(tunes.map((t) => t.arrangement.id)))
 
   const toLocal = (item) => ({ key: item.id ?? crypto.randomUUID(), kind: item.kind, label: item.label ?? '', arrangement: item.arrangement })
 
@@ -32,10 +39,30 @@
         items = s.items.map(toLocal)
         arrangements = a
         info = { name: s.name, showDate: s.showDate ?? '', venue: s.venue ?? '', notes: s.notes ?? '' }
+        lastKey = recallPosition(id, tunes)
+        revealCurrent()
       })
       .catch((e) => (error = e.message))
   }
   load()
+
+  function select(key) {
+    selectedKey = key
+    lastKey = key
+    rememberPosition(id, tunes, key)
+    revealCurrent()
+  }
+
+  function backToList() {
+    selectedKey = null
+    revealCurrent()
+  }
+
+  /** Scrolls the highlighted tune into view (after the list is shown again on phones). */
+  async function revealCurrent() {
+    await tick()
+    listEl?.querySelector('.row.active')?.scrollIntoView({ block: 'nearest' })
+  }
 
   async function saveItems() {
     saving = true
@@ -53,11 +80,8 @@
     }
   }
 
-  function addTune() {
-    const arrangement = arrangements.find((a) => a.id === toAdd)
-    if (!arrangement) return
+  function addTune(arrangement) {
     items.push({ key: crypto.randomUUID(), kind: 'tune', label: '', arrangement })
-    toAdd = ''
     saveItems()
   }
 
@@ -122,6 +146,15 @@
           <div class="actions">
             <button class="primary" type="submit">Save</button>
             <button type="button" onclick={() => (editingInfo = false)}>Cancel</button>
+            <!-- Archive lives here, not in the toolbar, so it's hard to hit by accident. -->
+            <button
+              type="button"
+              onclick={toggleArchived}
+              title={setlist.archivedAt ? 'Move back to active setlists' : 'Keep it, but hide it from active setlists'}
+            >
+              <Icon name={setlist.archivedAt ? 'unarchive' : 'archive'} size={18} />
+              {setlist.archivedAt ? 'Restore setlist' : 'Archive setlist'}
+            </button>
             <button type="button" class="danger" onclick={deleteSetlist}>Delete setlist</button>
           </div>
         </form>
@@ -136,23 +169,19 @@
           </div>
           <div class="toolbar-actions">
             <button onclick={() => (editingInfo = true)}><Icon name="edit" size={18} /> Edit</button>
-            <button onclick={toggleArchived} title={setlist.archivedAt ? 'Move back to active setlists' : 'Keep it, but hide it from active setlists'}>
-              <Icon name={setlist.archivedAt ? 'unarchive' : 'archive'} size={18} />
-              {setlist.archivedAt ? 'Restore' : 'Archive'}
-            </button>
           </div>
         </div>
         {#if setlist.notes}<p class="notes">{setlist.notes}</p>{/if}
       {/if}
 
-      <ol class="setlist" aria-busy={saving}>
+      <ol class="setlist" aria-busy={saving} bind:this={listEl}>
         {#each numbered as item, index (item.key)}
           {#if startsSet(index)}
             <li class="set-heading" aria-hidden="true">Set {item.set}</li>
           {/if}
           {#if item.kind === 'tune'}
-            <li class="row tune" class:active={item.key === selectedKey}>
-              <button class="select" onclick={() => (selectedKey = item.key)}>
+            <li class="row tune" class:active={item.key === (selectedKey ?? lastKey)}>
+              <button class="select" onclick={() => select(item.key)} aria-current={item.key === (selectedKey ?? lastKey) ? 'true' : undefined}>
                 <span class="n">{item.number}</span>
                 <span class="title">{item.arrangement.title}</span>
                 <span class="tempo">♩ = {item.arrangement.tempo}</span>
@@ -179,31 +208,32 @@
       </ol>
 
       <div class="add-bar">
-        <select bind:value={toAdd} aria-label="Tune to add">
-          <option value="">Choose a tune…</option>
-          {#each arrangements as a (a.id)}<option value={a.id}>{a.title}</option>{/each}
-        </select>
-        <button class="primary" onclick={addTune} disabled={!toAdd}><Icon name="plus" size={18} /> Add tune</button>
+        <TuneSearch {arrangements} {inSetlist} onpick={addTune} />
         <button onclick={addBreak}><Icon name="break" size={18} /> Add set break</button>
       </div>
     </section>
 
-    <section class="detail-pane">
-      {#if selected}
+    {#if selected}
+      <section class="detail-pane">
         <div class="stepper">
-          <button onclick={() => (selectedKey = null)} class="back-button"><Icon name="left" size={18} /> Setlist</button>
-          <button onclick={() => (selectedKey = tunes[selectedIndex - 1].key)} disabled={selectedIndex === 0}>
+          <button onclick={backToList} class="back-button"><Icon name="left" size={18} /> Setlist</button>
+          <button onclick={() => select(tunes[selectedIndex - 1].key)} disabled={selectedIndex === 0}>
             <Icon name="left" size={18} /> Prev
           </button>
-          <button onclick={() => (selectedKey = tunes[selectedIndex + 1].key)} disabled={selectedIndex === tunes.length - 1}>
-            Next <Icon name="right" size={18} />
+          <button class="next" onclick={() => select(next.key)} disabled={!next} title={next?.arrangement.title}>
+            {#if next}
+              <span class="next-title">
+                Next{next.set !== selected.set ? ` (set ${next.set})` : ''}: <strong>{next.arrangement.title}</strong>
+              </span>
+            {:else}
+              Last tune
+            {/if}
+            <Icon name="right" size={18} />
           </button>
         </div>
         <ArrangementDetail arrangement={selected.arrangement} heading="Set {selected.set} · Tune {selected.number}" />
-      {:else}
-        <p class="muted placeholder">Select a tune to see its arrangement and start the metronome.</p>
-      {/if}
-    </section>
+      </section>
+    {/if}
   </div>
 {/if}
 
@@ -306,20 +336,30 @@
   .add-bar {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  .add-bar select {
-    flex: 1 1 12rem;
+    align-items: flex-start;
+    gap: 0.75rem 1.25rem;
+    margin-top: 0.5rem;
   }
   .stepper {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 1rem;
   }
+  /* Sized to the next tune's name; wraps to its own row when it doesn't fit, and truncates past that. */
+  .next {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  .next :global(svg) {
+    flex: none;
+  }
+  .next-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .notes {
     white-space: pre-wrap;
-  }
-  .placeholder {
-    padding: 2rem 0;
   }
 </style>
