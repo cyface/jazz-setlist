@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jazz-setlist",
+  "account_id": "16805f1fb394761354e4f3f30bafa8c4",
+  "compatibility_date": "2026-10-01",
+  "main": "src/server/index.jsx",
+  // Reachable only through the Cloudflare Access-protected custom domain:
+  // the Worker trusts CF-Access-Authenticated-User-Email, which a public
+  // workers.dev or preview URL would let anyone set.
+  "workers_dev": false,
+  "upload_source_maps": true,
+  "observability": { "enabled": true },
+  "preview_urls": false,
+  "assets": {
+    "not_found_handling": "none"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "jazz-setlist",
+      "database_id": "83093851-a7e9-4149-bd57-8f5918875343",
+      "migrations_dir": "./drizzle"
+    }
+  ]
+  // Add a custom domain route once one is chosen, e.g.
+  // "routes": [{ "pattern": "setlist.cyface.com", "custom_domain": true }]
+}

@@ -1,0 +1,43 @@
+{
+  "name": "jazz-setlist",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply jazz-setlist --local",
+    "db:migrate:remote": "wrangler d1 migrations apply jazz-setlist --remote",
+    "lint": "eslint .",
+    "check": "eslint . && vitest run && vite build",
+    "release": "vite build && pnpm release:ci",
+    "release:ci": "wrangler d1 migrations apply jazz-setlist --remote && wrangler deploy"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.18",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.69.1",
+    "@eslint/js": "^10.0.1",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "drizzle-kit": "^0.31.11",
+    "eslint": "^10.14.0",
+    "eslint-plugin-svelte": "^3.24.1",
+    "globals": "^17.14.0",
+    "miniflare": "^4.20260730.0",
+    "svelte": "^5.57.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.161.0"
+  }
+}

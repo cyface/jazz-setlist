@@ -1,0 +1,15 @@
+node_modules
+dist
+coverage
+*.log
+.DS_Store
+
+# Local secrets and state
+.env
+.dev.vars
+.wrangler
+
+# Claude Code worktrees
+.claude/worktrees
+
+# KEEP THE .idea DIR DO NOT IGNORE IT
