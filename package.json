@@ -1,7 +1,7 @@
 {
   "name": "jazz-setlist",
   "private": true,
-  "version": "0.4.3",
+  "version": "0.4.4",
   "type": "module",
   "packageManager": "pnpm@12.4.2",
   "engines": {
@@ -17,8 +17,8 @@
     "db:migrate:local": "wrangler d1 migrations apply jazz-setlist --local",
     "db:migrate:remote": "wrangler d1 migrations apply jazz-setlist --remote",
     "lint": "eslint .",
-    "check": "eslint . && vitest run && vite build",
-    "release": "vite build && pnpm release:ci",
+    "check": "eslint . && vitest run && vite build && node scripts/check-sw.js",
+    "release": "vite build && node scripts/check-sw.js && pnpm release:ci",
     "release:ci": "wrangler d1 migrations apply jazz-setlist --remote && wrangler deploy",
     "icons": "sh scripts/icons.sh",
     "import:polynome": "sh scripts/polynome/import.sh"
