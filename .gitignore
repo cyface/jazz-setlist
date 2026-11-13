@@ -14,5 +14,7 @@ coverage
 
 # KEEP THE .idea DIR DO NOT IGNORE IT
 
-# PolyNome backups
+# PolyNome backups and import output (personal data)
 *.pln
+scripts/polynome/out/
+__pycache__/

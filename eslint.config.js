@@ -26,7 +26,7 @@ export default [
     languageOptions: { globals: { ...globals.serviceworker, __APP_VERSION__: 'readonly' } },
   },
   {
-    files: ['*.js', 'src/**/*.test.{js,jsx}', 'src/server/test-env.js'],
+    files: ['*.js', 'scripts/**/*.js', 'src/**/*.test.{js,jsx}', 'src/server/test-env.js'],
     languageOptions: { globals: globals.node },
   },
 ]
