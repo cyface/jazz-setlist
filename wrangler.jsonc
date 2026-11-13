@@ -24,4 +24,14 @@
   ],
   // Cloudflare Access must protect this domain before it is deployed.
   "routes": [{ "pattern": "setlist.cyface.com", "custom_domain": true }]
+
+  // Cloudflare Access bypass rules for the PWA (configured in the Dashboard,
+  // same as cyface-invoice). These are static files only, never /api/*:
+  //
+  // 1. /assets/*              — app bundle, PWA icons, apple-touch-icon
+  // 2. /manifest.webmanifest  — PWA manifest
+  // 3. /sw.js, /workbox-*.js  — service worker (must be at root for scope)
+  // 4. /favicon.*             — favicon files
+  //
+  // Everything else stays behind Access.
 }

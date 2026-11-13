@@ -4,6 +4,7 @@
   import SetlistPage from './pages/SetlistPage.svelte'
   import SetlistsPage from './pages/SetlistsPage.svelte'
   import Icon from './components/Icon.svelte'
+  import InstallPrompt from './components/InstallPrompt.svelte'
   import { matchRoute } from './lib/router.js'
   import { applyTheme, readTheme } from './lib/theme.js'
   import { nextTheme } from '../shared/theme.js'
@@ -52,3 +53,5 @@
     {/if}
   {/key}
 </main>
+
+<InstallPrompt />

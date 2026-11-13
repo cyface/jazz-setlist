@@ -75,6 +75,8 @@
     <path d="m9 6 6 6-6 6" />
   {:else if name === 'plus'}
     <path d="M12 5v14M5 12h14" />
+  {:else if name === 'download'}
+    <path d="M12 4v11M7 10.5l5 5 5-5M5 20h14" />
   {:else if name === 'close'}
     <path d="M6 6l12 12M18 6 6 18" />
   {:else if name === 'sun'}
