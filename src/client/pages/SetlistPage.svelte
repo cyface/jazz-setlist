@@ -190,8 +190,10 @@
           {#if item.kind === 'tune'}
             <li class="row tune" class:active={item.key === (selectedKey ?? lastKey)}>
               <button class="select" onclick={() => select(item.key)} aria-current={item.key === (selectedKey ?? lastKey) ? 'true' : undefined}>
-                <span class="n">{item.number}</span>
-                <span class="title">{item.arrangement.title}</span>
+                <span class="head">
+                  <span class="n">{item.number}</span>
+                  <span class="title">{item.arrangement.title}</span>
+                </span>
                 <span class="meta">
                   <TuneBadges arrangement={item.arrangement} compact />
                   <span class="tempo" title="Tempo (bpm)">{item.arrangement.tempo}<span class="sr-only">&nbsp;bpm</span></span>
@@ -312,15 +314,26 @@
     text-align: left;
     color: inherit;
   }
+  /* Number + title: one item, so a long title wraps its own text beside the
+     number instead of dropping onto a line of its own. */
+  .head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    flex: 1 1 auto; /* fills the row so the tempo sits at the right edge */
+    min-width: 0;
+  }
   .n {
+    flex: none;
     width: 1.5rem;
     color: var(--text-muted);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
   .title {
-    flex: 1 1 auto; /* fills the row so the tempo sits at the right edge */
+    min-width: 0;
     font-weight: 700;
+    overflow-wrap: anywhere;
   }
   /* Badges + tempo wrap together and stay at the right edge. */
   .meta {
