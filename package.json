@@ -1,7 +1,7 @@
 {
   "name": "jazz-setlist",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "packageManager": "pnpm@12.4.2",
   "engines": {
@@ -20,7 +20,8 @@
     "check": "eslint . && vitest run && vite build",
     "release": "vite build && pnpm release:ci",
     "release:ci": "wrangler d1 migrations apply jazz-setlist --remote && wrangler deploy",
-    "icons": "sh scripts/icons.sh"
+    "icons": "sh scripts/icons.sh",
+    "import:polynome": "sh scripts/polynome/import.sh"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",

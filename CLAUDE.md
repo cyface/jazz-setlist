@@ -35,6 +35,7 @@ pnpm db:migrate:local   # apply migrations to local D1 (.wrangler/state)
 pnpm db:migrate:remote  # apply to production D1
 pnpm release            # build, apply remote migrations, wrangler deploy (manual deploy)
 pnpm icons              # re-render favicon + PWA PNGs from public/favicon.svg (ImageMagick)
+pnpm import:polynome <backup.pln> <email> [--local|--remote]   # PolyNome backup -> tunes + setlists
 ```
 
 `pnpm deploy` is pnpm's built-in workspace command, not a script; never name a script `deploy`.
@@ -78,6 +79,10 @@ pnpm icons              # re-render favicon + PWA PNGs from public/favicon.svg (
 - Theme: `color-scheme: light dark` follows the OS; the top-bar toggle (System → Dark → Light) sets `data-theme` on `<html>` and stores it in localStorage (`src/client/lib/theme.js`). `THEME_BOOT_SCRIPT` (`src/shared/theme.js`) is inlined in the shell `<head>` so the saved theme applies before first paint. Check UI changes in both themes.
 - Production asset names are fixed (`/assets/app.js`, `/assets/app.css`, cache-busted by `?v=<package version>`) because the Hono shell references them. Bump `package.json` version on each release.
 - PWA (setup mirrors cyface-invoice): `vite-plugin-pwa` in `vite.config.js` (client environment only) builds `manifest.webmanifest`, `sw.js` and precaches `/assets/*` + favicons; `?v=` is ignored when matching the precache. There is no index.html, so the shell links the manifest (production only, `crossorigin="use-credentials"` for Access) and `main.js` registers `/sw.js`. Navigations are NetworkFirst (cached shell only offline) so an expired Access session still redirects to the login. Icons are rendered from `public/favicon.svg` (`pnpm icons`). `InstallPrompt.svelte` shows a phone-only install banner; its logic is in `lib/install.js`. Access bypass rules for the static PWA paths are listed in `wrangler.jsonc`.
+
+## PolyNome import (`scripts/polynome/`)
+
+Imports a PolyNome Pro backup (`.pln`, git-ignored) as tunes and setlists. Pipeline: `extract.py` (decodes the NSKeyedArchiver plist via `unarchive.py`, maps preset names to canonical titles in `CANON`; the rest of a name is cue text) → `transform.py` (emoji cues → fields: 🥢 sticks, 🖌 brushes, 🎤 drum solo, 🐟 bass, 💹 trading, 🚫🥁 drums later, 🇧🇷/📏 straight; 6 or 12 beats → 6/8, 12/8; tempo from the newest standalone preset; per-tune solo orders in `SOLOS`; all setlists but the active one archived) → `to-sql.js` (validates with the app's Zod schemas, emits idempotent SQL keyed on the user's email). Output goes to `scripts/polynome/out/` (git-ignored). A new tune name in a backup needs adding to `CANON` (extract prints `UNMAPPED` setlist items). Run Python with `-I`.
 
 ## Testing
 
