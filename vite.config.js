@@ -31,6 +31,12 @@ const pwa = VitePWA({
     globPatterns: ['**/*.{js,css,png,svg,ico,woff2}'],
     // The shell loads /assets/app.js?v=<version>; match the precached file.
     ignoreURLParametersMatching: [/^v$/],
+    // vite-plugin-pwa assumes every file in assets/ has a content hash in its
+    // name and precaches it without a revision. app.js and app.css keep fixed
+    // names, so they need revisions: without them sw.js never changes between
+    // releases and the old app.js is served forever. Only hashed chunks
+    // ([name]-[hash].js) skip the revision. scripts/check-sw.js checks the build.
+    dontCacheBustURLsMatching: /-[\w-]{8}\.\w+$/,
     cleanupOutdatedCaches: true,
     // The shell is server-rendered, so there is no index.html to fall back to.
     // Navigations go to the network first: an expired Access session then
