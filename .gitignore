@@ -13,3 +13,6 @@ coverage
 .claude/worktrees
 
 # KEEP THE .idea DIR DO NOT IGNORE IT
+
+# PolyNome backups
+*.pln
