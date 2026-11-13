@@ -53,8 +53,10 @@
               title="Right-click to add to a setlist"
             >
               <span class="title">{a.title}</span>
-              <span class="tempo">♩ = {a.tempo}</span>
-              <TuneBadges arrangement={a} compact />
+              <span class="meta">
+                <TuneBadges arrangement={a} compact />
+                <span class="tempo" title="Tempo (bpm)">{a.tempo}<span class="sr-only">&nbsp;bpm</span></span>
+              </span>
             </a>
           </li>
         {/each}
@@ -74,13 +76,22 @@
 
 <style>
   .title {
+    flex: 1 1 auto; /* fills the row so the tempo sits at the right edge */
     font-weight: 700;
     font-size: 1.05rem;
   }
+  /* Badges + tempo wrap together and stay at the right edge. */
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-left: auto;
+  }
   .tempo {
+    min-width: 3ch; /* right-aligned in a fixed width so 2- and 3-digit tempos line up */
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
-    margin-left: auto;
+    text-align: right;
   }
   .row {
     flex-wrap: wrap;
