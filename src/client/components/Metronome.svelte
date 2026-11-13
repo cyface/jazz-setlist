@@ -67,8 +67,8 @@
     </div>
     {#if beatsPerBar % 2 === 0}
       <div class="accent-choice" role="group" aria-label="Accent">
-        <button class:selected={accent === 'one'} onclick={() => (accent = 'one')}>Accent 1</button>
-        <button class:selected={accent === 'two-four'} onclick={() => (accent = 'two-four')}>2 &amp; 4</button>
+        <button class:selected={accent === 'one'} aria-pressed={accent === 'one'} onclick={() => (accent = 'one')}>Accent 1</button>
+        <button class:selected={accent === 'two-four'} aria-pressed={accent === 'two-four'} onclick={() => (accent = 'two-four')}>2 &amp; 4</button>
       </div>
     {/if}
   </div>
@@ -76,6 +76,7 @@
 
 <style>
   .metronome {
+    container: metronome / inline-size;
     display: grid;
     gap: 1rem;
     padding: 1rem;
@@ -157,5 +158,39 @@
   }
   .accent-choice button:last-child {
     border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  .accent-choice button.selected {
+    position: relative;
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--bg-raised));
+  }
+  /* Narrow metronome (phones, and the tune detail column on desktop): play/tempo/accent don't fit
+     on one row, so stack them: a big start/stop that's easy to hit on a gig, then tempo, then accent. */
+  @container metronome (max-width: 32rem) {
+    .play {
+      flex: 1 0 100%;
+      height: 4.5rem;
+      border-radius: var(--radius);
+    }
+    .play :global(.icon) {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+    .tempo,
+    .accent-choice {
+      flex: 1 0 100%;
+      margin-left: 0;
+    }
+    .tempo {
+      justify-content: space-between;
+    }
+    .tempo button {
+      width: 3rem;
+      height: 3rem;
+    }
+    .accent-choice button {
+      flex: 1;
+    }
   }
 </style>
