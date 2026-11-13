@@ -1,8 +1,12 @@
 <script>
   import Icon from './Icon.svelte'
-  import { LABELS, describeSoloEntry, soloEntryHasDrums } from '../../shared/attributes.js'
+  import { LABELS, describeSoloEntry, soloEntryHasDrums, soloEntryIcons } from '../../shared/attributes.js'
 
   let { soloOrder } = $props()
+
+  /** Accessible name for a chip's icons: who solos and how ("Piano solo", "Drums over the head out"). */
+  const iconLabel = (entry) =>
+    entry.type === 'solo' ? `${describeSoloEntry(entry)} solo` : entry.type === 'trade' ? LABELS.soloType.trade : describeSoloEntry(entry)
 </script>
 
 {#if soloOrder.length}
@@ -10,7 +14,9 @@
     {#each soloOrder as entry, i (i)}
       <li class:drums={soloEntryHasDrums(entry)}>
         <span class="n">{i + 1}</span>
-        <Icon name={entry.type} title={LABELS.soloType[entry.type]} />
+        <span class="icons" role="img" aria-label={iconLabel(entry)} title={iconLabel(entry)}>
+          {#each soloEntryIcons(entry) as icon (icon)}<Icon name={icon} />{/each}
+        </span>
         <span>{describeSoloEntry(entry)}</span>
       </li>
     {/each}
@@ -41,6 +47,10 @@
   li.drums {
     border-color: var(--c-solo);
     color: var(--c-solo);
+  }
+  .icons {
+    display: inline-flex;
+    gap: 0.15rem;
   }
   .n {
     display: grid;

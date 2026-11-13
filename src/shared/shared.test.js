@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { describeSoloEntry, soloEntryHasDrums } from './attributes.js'
+import { INSTRUMENTS, describeSoloEntry, instrumentIcon, soloEntryHasDrums, soloEntryIcons } from './attributes.js'
 import { moveItem, numberSets } from './setlist.js'
 
 describe('describeSoloEntry', () => {
@@ -15,6 +15,43 @@ describe('describeSoloEntry', () => {
     expect(soloEntryHasDrums({ type: 'solo', instrument: 'drums' })).toBe(true)
     expect(soloEntryHasDrums({ type: 'trade', instruments: ['sax', 'drums'], bars: 8 })).toBe(true)
     expect(soloEntryHasDrums({ type: 'solo', instrument: 'bass' })).toBe(false)
+  })
+})
+
+describe('instrumentIcon', () => {
+  it('has an icon for every suggested instrument', () => {
+    for (const instrument of INSTRUMENTS) expect(instrumentIcon(instrument)).toBeTruthy()
+    expect(instrumentIcon('piano')).toBe('piano')
+    expect(instrumentIcon('drums')).toBe('drum')
+  })
+
+  it('ignores case and surrounding spaces, and knows common other names', () => {
+    expect(instrumentIcon(' Sax ')).toBe('sax')
+    expect(instrumentIcon('Tenor')).toBe('sax')
+    expect(instrumentIcon('upright bass')).toBe('bass')
+    expect(instrumentIcon('vibraphone')).toBe('vibes')
+  })
+
+  it('returns null for free-text instruments without an icon', () => {
+    expect(instrumentIcon('flute')).toBeNull()
+    expect(instrumentIcon('')).toBeNull()
+    expect(instrumentIcon(undefined)).toBeNull()
+  })
+})
+
+describe('soloEntryIcons', () => {
+  it("uses the soloist's instrument, falling back to the mic", () => {
+    expect(soloEntryIcons({ type: 'solo', instrument: 'guitar' })).toEqual(['guitar'])
+    expect(soloEntryIcons({ type: 'solo', instrument: 'flute' })).toEqual(['solo'])
+  })
+
+  it('adds the loop for over the head out', () => {
+    expect(soloEntryIcons({ type: 'over_head', instrument: 'drums' })).toEqual(['drum', 'over_head'])
+    expect(soloEntryIcons({ type: 'over_head', instrument: 'flute' })).toEqual(['solo', 'over_head'])
+  })
+
+  it('keeps the trade arrows for trades', () => {
+    expect(soloEntryIcons({ type: 'trade', instruments: ['drums', 'bass'], bars: 4 })).toEqual(['trade'])
   })
 })
 

@@ -1,6 +1,6 @@
 <script>
   import Icon from './Icon.svelte'
-  import { INSTRUMENTS, LABELS, TRADE_BARS } from '../../shared/attributes.js'
+  import { INSTRUMENTS, LABELS, TRADE_BARS, soloEntryIcons } from '../../shared/attributes.js'
   import { moveItem } from '../../shared/setlist.js'
 
   let { soloOrder = $bindable() } = $props()
@@ -24,7 +24,10 @@
   {#each soloOrder as entry, i (entry)}
     <li>
       <span class="n">{i + 1}</span>
-      <span class="type"><Icon name={entry.type} /> {LABELS.soloType[entry.type]}</span>
+      <span class="type">
+        {#each soloEntryIcons(entry) as icon (icon)}<Icon name={icon} />{/each}
+        {LABELS.soloType[entry.type]}
+      </span>
 
       <div class="fields">
         {#if entry.type === 'trade'}
