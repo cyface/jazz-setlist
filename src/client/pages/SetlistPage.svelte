@@ -20,6 +20,8 @@
   /** The tune opened most recently; stays highlighted in the list after going back to it. */
   let lastKey = $state(null)
   let listEl = $state()
+  /** Edit mode: the rows get reorder/remove controls and break-note inputs; Details opens the info form. */
+  let editing = $state(false)
   let editingInfo = $state(false)
   let info = $state({ name: '', showDate: '', venue: '', notes: '' })
 
@@ -38,7 +40,7 @@
         setlist = s
         items = s.items.map(toLocal)
         arrangements = a
-        info = { name: s.name, showDate: s.showDate ?? '', venue: s.venue ?? '', notes: s.notes ?? '' }
+        resetInfo()
         lastKey = recallPosition(id, tunes)
         revealCurrent()
       })
@@ -99,13 +101,24 @@
   }
 
   function move(index, to) {
+    if (!editing) return
     items = moveItem(items, index, to)
     saveItems()
   }
 
   function remove(index) {
+    if (!editing) return
     items.splice(index, 1)
     saveItems()
+  }
+
+  function resetInfo() {
+    info = { name: setlist.name, showDate: setlist.showDate ?? '', venue: setlist.venue ?? '', notes: setlist.notes ?? '' }
+  }
+
+  function cancelInfo() {
+    resetInfo()
+    editingInfo = false
   }
 
   async function saveInfo(e) {
@@ -153,7 +166,7 @@
           <label class="field"><span>Notes</span><textarea bind:value={info.notes} rows="3" maxlength="5000"></textarea></label>
           <div class="actions">
             <button class="primary" type="submit">Save</button>
-            <button type="button" onclick={() => (editingInfo = false)}>Cancel</button>
+            <button type="button" onclick={cancelInfo}>Cancel</button>
             <!-- Archive lives here, not in the toolbar, so it's hard to hit by accident. -->
             <button
               type="button"
@@ -176,10 +189,16 @@
             {/if}
           </div>
           <div class="toolbar-actions">
-            <button onclick={() => (editingInfo = true)}><Icon name="edit" size={18} /> Edit</button>
+            {#if editing}
+              <button onclick={() => (editingInfo = true)}><Icon name="edit" size={18} /> Details</button>
+              <button class="primary" onclick={() => (editing = false)}>Done</button>
+            {:else}
+              <button onclick={() => (editing = true)}><Icon name="edit" size={18} /> Edit</button>
+            {/if}
           </div>
         </div>
         {#if setlist.notes}<p class="notes">{setlist.notes}</p>{/if}
+        {#if editing}<p class="muted edit-hint">Move and remove items with the buttons on each row. Changes save as you go.</p>{/if}
       {/if}
 
       <ol class="setlist" aria-busy={saving} bind:this={listEl}>
@@ -199,21 +218,25 @@
                   <span class="tempo" title="Tempo (bpm)">{item.arrangement.tempo}<span class="sr-only">&nbsp;bpm</span></span>
                 </span>
               </button>
-              {@render rowActions(index)}
+              {#if editing}{@render rowActions(index)}{/if}
             </li>
           {:else}
             <li class="row set-break">
               <Icon name="break" title="Set break" />
               <span class="break-label">Set break</span>
-              <input
-                class="break-note"
-                bind:value={items[index].label}
-                onchange={saveItems}
-                placeholder="Note (e.g. 20 min)"
-                maxlength="100"
-                aria-label="Set break note"
-              />
-              {@render rowActions(index)}
+              {#if editing}
+                <input
+                  class="break-note"
+                  bind:value={items[index].label}
+                  onchange={saveItems}
+                  placeholder="Note (e.g. 20 min)"
+                  maxlength="100"
+                  aria-label="Set break note"
+                />
+                {@render rowActions(index)}
+              {:else if item.label}
+                <span class="break-note-text">{item.label}</span>
+              {/if}
             </li>
           {/if}
         {/each}
@@ -360,6 +383,16 @@
   .break-label {
     font-weight: 700;
     white-space: nowrap;
+  }
+  .break-note-text {
+    flex: 1;
+    min-width: 0;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+  }
+  .edit-hint {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
   }
   .break-note {
     flex: 1;
