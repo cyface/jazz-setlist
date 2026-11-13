@@ -50,7 +50,7 @@ pnpm release            # build, apply remote migrations, wrangler deploy (manua
 ## Auth (Cloudflare Access / Zero Trust, same pattern as cyface-invoice)
 
 - Cloudflare Access protects the whole custom domain. The Worker reads `CF-Access-Authenticated-User-Email` and auto-provisions a `users` row (`src/server/middleware/auth.js`).
-- Local dev: `.dev.vars` sets `DEV_AUTH_EMAIL`; it is honored only for `localhost`/`127.0.0.1`.
+- Local dev: `.env` (copy from `.env.example`) sets `DEV_AUTH_EMAIL`; it is honored only for `localhost`/`127.0.0.1`. Do not create a `.dev.vars`: when it exists, wrangler ignores `.env`.
 - `workers_dev` and `preview_urls` are `false` so the Worker is reachable only through Access. Never enable them: the header is trusted, so a public URL would let anyone impersonate a user.
 - Every query on `arrangements` / `setlists` filters by `user_id`. Setlist item writes verify each `arrangementId` belongs to the user.
 
@@ -82,4 +82,4 @@ pnpm release            # build, apply remote migrations, wrangler deploy (manua
 ## Git
 
 - Keep the `.idea/` directory tracked; never ignore or remove it.
-- Never commit `.dev.vars` or `.wrangler/`.
+- Never commit `.env` or `.wrangler/`.

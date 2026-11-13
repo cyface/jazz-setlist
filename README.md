@@ -6,7 +6,7 @@ Arrangements (feel, brushes/sticks, drum entry, solo order, tempo) with a built-
 
 ```bash
 pnpm install
-cp .dev.vars.example .dev.vars        # set DEV_AUTH_EMAIL
+cp .env.example .env                  # set DEV_AUTH_EMAIL
 pnpm db:migrate:local
 pnpm dev                              # http://localhost:5188
 ```

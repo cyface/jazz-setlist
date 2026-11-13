@@ -19,7 +19,7 @@ export async function findOrProvisionUser(db, email) {
 
 /**
  * Cloudflare Access sets CF-Access-Authenticated-User-Email on every request
- * it lets through. On localhost (no Access) DEV_AUTH_EMAIL from .dev.vars
+ * it lets through. On localhost (no Access) DEV_AUTH_EMAIL from .env
  * stands in for it.
  */
 export function authMiddleware() {
