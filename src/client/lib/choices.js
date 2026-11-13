@@ -4,6 +4,7 @@ import { LABELS } from '../../shared/attributes.js'
 export const FEEL_OPTIONS = [
   { value: 'swing', label: LABELS.feel.swing, icon: 'swing' },
   { value: 'straight', label: LABELS.feel.straight, icon: 'straight' },
+  { value: 'bossa', label: LABELS.feel.bossa, icon: 'bossa' },
 ]
 export const IMPLEMENT_OPTIONS = [
   { value: 'sticks', label: LABELS.drumImplement.sticks, icon: 'sticks' },
