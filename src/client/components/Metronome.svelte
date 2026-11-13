@@ -67,8 +67,8 @@
     </div>
     {#if beatsPerBar % 2 === 0}
       <div class="accent-choice" role="group" aria-label="Accent">
-        <button class:selected={accent === 'one'} onclick={() => (accent = 'one')}>Accent 1</button>
-        <button class:selected={accent === 'two-four'} onclick={() => (accent = 'two-four')}>2 &amp; 4</button>
+        <button class:selected={accent === 'one'} aria-pressed={accent === 'one'} onclick={() => (accent = 'one')}>Accent 1</button>
+        <button class:selected={accent === 'two-four'} aria-pressed={accent === 'two-four'} onclick={() => (accent = 'two-four')}>2 &amp; 4</button>
       </div>
     {/if}
   </div>
@@ -157,5 +157,39 @@
   }
   .accent-choice button:last-child {
     border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  .accent-choice button.selected {
+    position: relative;
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--bg-raised));
+  }
+  /* Phones: a big start/stop on its own line, easy to hit on a gig; the tempo row goes below. */
+  @media (max-width: 767.98px) {
+    .play {
+      flex: 1 0 100%;
+      height: 4.5rem;
+      border-radius: var(--radius);
+    }
+    .play :global(.icon) {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+    /* Tempo and accent don't fit side by side at phone widths; each takes a full row. */
+    .tempo,
+    .accent-choice {
+      flex: 1 0 100%;
+      margin-left: 0;
+    }
+    .tempo {
+      justify-content: space-between;
+    }
+    .tempo button {
+      width: 3rem;
+      height: 3rem;
+    }
+    .accent-choice button {
+      flex: 1;
+    }
   }
 </style>
