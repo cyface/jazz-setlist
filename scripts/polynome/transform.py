@@ -14,8 +14,8 @@ raw = json.load(open(sys.argv[1]))
 EMOJI = [('🚫🥁', 'no drums'), ('💹8️⃣', 'trading 8s'), ('💹4️⃣', 'trading 4s'), ('💹8', 'trading 8s'),
          ('💹4', 'trading 4s'), ('1️⃣6️⃣', '16ths'), ('6️⃣/8️⃣', '6/8'), ('8️⃣', '8ths'), ('3️⃣', 'count 3'),
          ('🥢', 'sticks'), ('🖌', 'brushes'), ('🎤', 'drum solo'), ('💹', 'trading'), ('🇧🇷', 'bossa'),
-         ('📏', 'straight'), ('🛑', 'stop time'), ('🔀', 'shuffle'), ('🎹', 'keys'), ('🐟', 'bass')]
-# Feel: 🇧🇷 or a title in BOSSA -> bossa; otherwise the word "latin" or a title in LATIN -> latin;
+         ('📏', 'straight'), ('💃', 'latin'), ('🛑', 'stop time'), ('🔀', 'shuffle'), ('🎹', 'keys'), ('🐟', 'bass')]
+# Feel: 🇧🇷 or a title in BOSSA -> bossa; otherwise 💃, the word "latin" or a title in LATIN -> latin;
 # otherwise 📏 or a title in STRAIGHT -> straight; otherwise swing.
 BOSSA = {'Black Orpheus', 'Blue Bossa', 'Girl from Ipanema', 'How Insensitive', 'Quiet Nights of Quiet Stars'}
 LATIN = {'Chitlins con Carne', 'Song for My Father'}
@@ -109,7 +109,7 @@ def solo_order(title, occs):
 def feel(title, occs):
     name = latest(occs)[0]['name']  # the tune's newest preset name
     if title in BOSSA or '🇧🇷' in name: return 'bossa'
-    if title in LATIN or re.search(r'\blatin\b', name, re.I): return 'latin'
+    if title in LATIN or '💃' in name or re.search(r'\blatin\b', name, re.I): return 'latin'
     if title in STRAIGHT or '📏' in name: return 'straight'
     return 'swing'
 
