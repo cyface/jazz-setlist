@@ -221,7 +221,7 @@
               {#if editing}{@render rowActions(index)}{/if}
             </li>
           {:else}
-            <li class="row set-break">
+            <li class="row set-break" class:editing>
               <Icon name="break" title="Set break" />
               <span class="break-label">Set break</span>
               {#if editing}
@@ -395,9 +395,24 @@
     font-size: 0.9rem;
   }
   .break-note {
-    flex: 1;
-    min-width: 6rem;
+    flex: 1 1 6rem;
+    min-width: 0;
     background: transparent;
+  }
+  /* Narrow phones (320px): the note input gets its own full-width line under
+     the label and row actions, instead of pushing the actions off screen. */
+  @media (max-width: 400px) {
+    .set-break.editing {
+      flex-wrap: wrap;
+    }
+    .set-break.editing .row-actions {
+      margin-left: auto;
+      padding-right: 0;
+    }
+    .set-break.editing .break-note {
+      order: 1;
+      flex-basis: 100%;
+    }
   }
   .add-bar {
     display: flex;
