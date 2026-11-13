@@ -16,7 +16,7 @@ pnpm dev                              # http://localhost:5188
 Merges to `main` deploy to the timlwhite Cloudflare account via `.github/workflows/deploy.yml`; PRs run CI. The D1 database `jazz-setlist` exists in that account. One-time setup:
 
 1. Create a Cloudflare API token in the timlwhite account with Workers Scripts Edit and D1 Edit, then `gh secret set CLOUDFLARE_API_TOKEN --repo cyface/jazz-setlist`.
-2. Add a custom domain to `routes` in `wrangler.jsonc`.
-3. Zero Trust → Access → Applications: add a self-hosted app for that domain with an allow policy for your email(s).
+2. Zero Trust → Access → Applications: add a self-hosted app for `setlist.cyface.com` with an allow policy for your email(s). Do this before the domain is deployed so it is never public.
+3. The custom domain is set in `routes` in `wrangler.jsonc`; the API token also needs access to the `cyface.com` zone (Workers Routes Edit) to attach it.
 
 Manual deploy from a laptop: `pnpm release`.

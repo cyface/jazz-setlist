@@ -21,7 +21,7 @@
       "database_id": "83093851-a7e9-4149-bd57-8f5918875343",
       "migrations_dir": "./drizzle"
     }
-  ]
-  // Add a custom domain route once one is chosen, e.g.
-  // "routes": [{ "pattern": "setlist.cyface.com", "custom_domain": true }]
+  ],
+  // Cloudflare Access must protect this domain before it is deployed.
+  "routes": [{ "pattern": "setlist.cyface.com", "custom_domain": true }]
 }
