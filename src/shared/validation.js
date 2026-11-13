@@ -70,6 +70,8 @@ export const setlistAddTuneSchema = z.object({ arrangementId: z.string().min(1) 
 /** Per-user preferences (PUT /api/me/preferences). */
 export const preferencesSchema = z.object({
   hideDefaults: z.boolean(),
+  // Optional so a client cached from before the setting existed can still save.
+  sound: z.boolean().default(true),
   defaults: z.object({
     feel: z.enum(FEELS),
     drumImplement: z.enum(DRUM_IMPLEMENTS),

@@ -58,7 +58,18 @@
       </div>
     </section>
 
-    <section class="list-view">
+    <section class="stack">
+      <h2>Metronome</h2>
+      <label class="toggle">
+        <input type="checkbox" bind:checked={form.sound} />
+        <span>
+          <strong>Metronome sound</strong>
+          <span class="muted">Off, the metronome plays no clicks but the beat lights keep flashing, for a silent count-off on stage. The mute button on the metronome overrides this until you reload.</span>
+        </span>
+      </label>
+    </section>
+
+    <section class="stack">
       <h2>List view</h2>
       <label class="toggle">
         <input type="checkbox" bind:checked={form.hideDefaults} />
@@ -95,11 +106,11 @@
   .hint {
     margin: 0 0 0.75rem;
   }
-  .list-view {
+  .stack {
     display: grid;
     gap: 0.75rem;
   }
-  .list-view h2 {
+  .stack h2 {
     margin: 0;
   }
   .defaults {
@@ -113,6 +124,7 @@
     cursor: pointer;
   }
   .toggle input {
+    flex: none;
     width: 1.25rem;
     height: 1.25rem;
     min-height: 0;
