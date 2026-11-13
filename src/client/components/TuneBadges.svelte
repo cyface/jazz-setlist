@@ -76,6 +76,7 @@
   }
   .feel-swing { color: var(--c-swing); }
   .feel-straight { color: var(--c-straight); }
+  .feel-bossa { color: var(--c-bossa); }
   .implement-sticks { color: var(--c-sticks); }
   .implement-brushes { color: var(--c-brushes); }
   .entry-top { color: var(--c-drums-top); }

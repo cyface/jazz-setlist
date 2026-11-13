@@ -32,6 +32,11 @@
     <ellipse cx="16.4" cy="18.2" rx="2.6" ry="1.9" transform="rotate(-20 16.4 18.2)" fill="currentColor" stroke="none" />
     <path d="M8.7 17.6V5M18.7 17.6V5" />
     <path d="M8.7 5.2H18.7" stroke-width="2.6" stroke-linecap="butt" />
+  {:else if name === 'bossa'}
+    <!-- a shaken maraca -->
+    <ellipse cx="13.6" cy="8.6" rx="4.4" ry="5.4" transform="rotate(35 13.6 8.6)" fill="currentColor" />
+    <path d="M10.5 13 5.6 19.9" stroke-width="2.6" />
+    <path d="M4.6 9.4c.2-1.5.9-2.8 2-3.8M2.4 8.6c.3-2.3 1.4-4.3 3.1-5.8M18.4 15.4c1.2-.4 2.2-1.1 2.9-2.1M18.6 18.4c1.7-.6 3-1.6 3.9-3" stroke-width="1.4" />
   {:else if name === 'sticks'}
     <path d="M4 21 17 5M20 21 7 5" stroke-width="2.2" />
     <circle cx="17.7" cy="4.2" r="1.5" fill="currentColor" stroke="none" />

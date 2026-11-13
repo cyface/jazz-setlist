@@ -57,6 +57,13 @@ describe('preferences', () => {
     expect((await (await t.api('other-prefs@example.com', 'GET', '/me')).json()).user.preferences.hideDefaults).toBe(false)
   })
 
+  it('accepts every feel as the default feel, including bossa', async () => {
+    const bossa = { ...prefs, defaults: { ...prefs.defaults, feel: 'bossa' } }
+    const res = await t.api('prefs@example.com', 'PUT', '/me/preferences', bossa)
+    expect(res.status).toBe(200)
+    expect((await res.json()).preferences.defaults.feel).toBe('bossa')
+  })
+
   it('rejects invalid preferences', async () => {
     const res = await t.api('prefs@example.com', 'PUT', '/me/preferences', { ...prefs, defaults: { ...prefs.defaults, feel: 'polka' } })
     expect(res.status).toBe(400)
@@ -83,6 +90,10 @@ describe('arrangements', () => {
     expect(await createArrangement(TIM, { beatsPerBar: 6, beatUnit: 8 })).toMatchObject({ beatsPerBar: 6, beatUnit: 8 })
     const res = await t.api(TIM, 'POST', '/arrangements', sampleArrangement({ beatUnit: 3 }))
     expect(res.status).toBe(400)
+  })
+
+  it('stores a bossa feel', async () => {
+    expect((await createArrangement(TIM, { feel: 'bossa' })).feel).toBe('bossa')
   })
 
   it('clears the drums entry note when drums play from the top', async () => {
