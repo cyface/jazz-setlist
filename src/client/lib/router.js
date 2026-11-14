@@ -43,6 +43,16 @@ export const editTuneHref = (arrangementId, from = null) =>
 export const afterEditPath = (arrangementId, from = null) =>
   from ? `/setlists/${from.setlistId}?tune=${from.index}&arrangement=${arrangementId}` : `/arrangements/${arrangementId}`
 
+/**
+ * Back from editing `opening` ({ index, arrangementId }, a tune in a setlist): the tune's own page when the setlist
+ * is gone (404) or no longer has the tune, else null (show it in the setlist).
+ */
+export const tunePageInstead = (opening, { status, tuneFound = true } = {}) =>
+  opening && (status === 404 || !tuneFound) ? `#/arrangements/${opening.arrangementId}` : null
+
 export const navigate = (path) => {
   location.hash = path
 }
+
+/** Leaves a form for `path` without leaving the form in history, so Back skips it. */
+export const leaveForm = (path) => location.replace(`#${path}`)

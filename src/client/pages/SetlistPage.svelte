@@ -1,5 +1,5 @@
 <script>
-  import { tick } from 'svelte'
+  import { tick, untrack } from 'svelte'
   import ArrangementDetail from '../components/ArrangementDetail.svelte'
   import Icon from '../components/Icon.svelte'
   import TuneBadges from '../components/TuneBadges.svelte'
@@ -8,6 +8,7 @@
   import { connection } from '../lib/connection.svelte.js'
   import { editTuneHref, navigate } from '../lib/router.js'
   import { findTune, recallPosition, rememberPosition } from '../lib/setlist-position.js'
+  import { tunePageInstead } from '../lib/router.js'
   import { moveItem, numberSets } from '../../shared/setlist.js'
 
   /** `open` ({ index, arrangementId }): the tune to open once loaded (back from editing it). */
@@ -37,9 +38,13 @@
   const toLocal = (item) => ({ key: item.id ?? crypto.randomUUID(), kind: item.kind, label: item.label ?? '', arrangement: item.arrangement })
 
   // The URL asked for a tune to open (back from editing it): open it once, and drop the request from the URL,
-  // so reloading or reopening the app shows the setlist as usual.
-  let opening = $state.snapshot(open)
-  if (opening) history.replaceState(null, '', `#/setlists/${id}`)
+  // so reloading or reopening the app shows the setlist as usual. (The page is rebuilt for each route, so reading
+  // the props once here is enough.)
+  let opening = untrack(() => $state.snapshot(open))
+  if (opening) history.replaceState(null, '', `#/setlists/${untrack(() => id)}`)
+
+  /** The tune's own page, replacing this history entry so Back doesn't land here again. */
+  const leaveFor = (hash) => location.replace(hash)
 
   function load() {
     // Offline, the setlist comes from the saved copy; the tune list (only needed to add tunes) can't load, and isn't needed.
@@ -47,6 +52,7 @@
       .then(([s, a]) => {
         // Item ids are new after a save elsewhere: keep the open tune open (and its metronome playing) by position + tune.
         const keep = selected ? { index: selectedIndex, arrangementId: selected.arrangement.id } : opening
+        const returning = opening
         opening = null
         setlist = s
         items = s.items.map(toLocal)
@@ -54,16 +60,19 @@
         resetInfo()
         lastKey = recallPosition(id, tunes)
         const key = keep && findTune(tunes, keep)?.key
-        if (key) select(key)
+        // Back from editing a tune that's no longer in this setlist: show the tune instead.
+        const instead = tunePageInstead(returning, { tuneFound: Boolean(key) })
+        if (instead) leaveFor(instead)
+        else if (key) select(key)
         else {
           selectedKey = null
           revealCurrent()
         }
       })
       .catch((e) => {
-        // Back from editing a tune in a setlist that's gone since: show the tune instead (replacing the history entry,
-        // so Back doesn't land here again).
-        if (opening && e.status === 404) return location.replace(`#/arrangements/${opening.arrangementId}`)
+        // Back from editing a tune in a setlist that's gone since: show the tune instead.
+        const instead = tunePageInstead(opening, { status: e.status })
+        if (instead) return leaveFor(instead)
         error = e.message
       })
   }

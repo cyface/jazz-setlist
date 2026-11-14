@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { afterEditPath, editTuneHref, matchRoute, withoutQuery } from './router.js'
+import { afterEditPath, editTuneHref, matchRoute, tunePageInstead, withoutQuery } from './router.js'
 
 describe('matchRoute', () => {
   it.each([
@@ -55,6 +55,16 @@ describe('editing a tune from a setlist', () => {
       id: 's-1',
       open: { index: 3, arrangementId: 'a1' },
     })
+  })
+
+  it('shows the tune page instead when the setlist or the tune is gone', () => {
+    const opening = { index: 3, arrangementId: 'a1' }
+    expect(tunePageInstead(opening, { status: 404 })).toBe('#/arrangements/a1')
+    expect(tunePageInstead(opening, { tuneFound: false })).toBe('#/arrangements/a1')
+    expect(tunePageInstead(opening, { tuneFound: true })).toBeNull()
+    expect(tunePageInstead(opening, { status: 500 })).toBeNull() // a server error is reported, not hidden
+    expect(tunePageInstead(null, { status: 404 })).toBeNull() // not back from editing: the setlist page reports it
+    expect(tunePageInstead(null, { tuneFound: false })).toBeNull()
   })
 
   it('drops the query from a hash', () => {

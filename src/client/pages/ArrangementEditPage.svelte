@@ -4,7 +4,7 @@
   import { api } from '../lib/api.js'
   import { tapTempo } from '../lib/metronome.js'
   import { ENTRY_OPTIONS, FEEL_OPTIONS, IMPLEMENT_OPTIONS } from '../lib/choices.js'
-  import { afterEditPath, navigate } from '../lib/router.js'
+  import { afterEditPath, leaveForm, navigate } from '../lib/router.js'
   import { session } from '../lib/session.svelte.js'
   import { BEAT_UNITS, BEATS_PER_BAR_OPTIONS, parseTimeSignature } from '../../shared/attributes.js'
 
@@ -58,7 +58,7 @@
     try {
       const payload = { ...$state.snapshot(form), tempo: Number(form.tempo), beatsPerBar: Number(form.beatsPerBar), beatUnit: Number(form.beatUnit) }
       const saved = id ? await api.updateArrangement(id, payload) : await api.createArrangement(payload)
-      navigate(afterEditPath(saved.id, id ? from : null))
+      leaveForm(afterEditPath(saved.id, id ? from : null))
     } catch (err) {
       error = err.message
     } finally {
@@ -142,7 +142,14 @@
 
       <div class="actions">
         <button class="primary" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-        <a class="button" href={id ? `#${afterEditPath(id, from)}` : '#/'}>Cancel</a>
+        <a
+          class="button"
+          href={id ? `#${afterEditPath(id, from)}` : '#/'}
+          onclick={(e) => {
+            e.preventDefault()
+            leaveForm(id ? afterEditPath(id, from) : '/')
+          }}>Cancel</a
+        >
         {#if id}<button type="button" class="danger" onclick={remove}>Delete</button>{/if}
       </div>
     </form>
