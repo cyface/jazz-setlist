@@ -24,6 +24,16 @@ export function rememberPosition(setlistId, tunes, key, storage = globalThis.loc
   }
 }
 
+/** Forgets every setlist's position (log out, or another user signed in). */
+export function forgetPositions(storage = globalThis.localStorage) {
+  try {
+    const keys = Array.from({ length: storage.length }, (_, i) => storage.key(i))
+    for (const key of keys) if (key?.startsWith('setlist-position:')) storage.removeItem(key)
+  } catch {
+    // No storage: nothing was remembered.
+  }
+}
+
 /** The key of the remembered tune in `tunes`, or null. */
 export function recallPosition(setlistId, tunes, storage = globalThis.localStorage) {
   try {

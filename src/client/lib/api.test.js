@@ -66,6 +66,25 @@ describe('api offline fallback', () => {
     expect(connection.offline).toBe(false)
   })
 
+  it('gives up on a read that hangs (a network that connects but passes nothing) and uses the saved copy', async () => {
+    await api.me()
+    await saveActiveSetlistsOffline()
+    server.mockImplementationOnce(async (_url, init) => {
+      expect(init.signal).toBeInstanceOf(AbortSignal)
+      throw new DOMException('The operation timed out.', 'TimeoutError')
+    })
+    expect((await api.getSetlist('s1')).name).toBe('Gig')
+    expect(connection.offline).toBe(true)
+  })
+
+  it('does not time out writes', async () => {
+    server.mockImplementationOnce(async (_url, init) => {
+      expect(init.signal).toBeUndefined()
+      return json({ setlist: gig })
+    })
+    await api.updateSetlist('s1', { name: 'Gig' })
+  })
+
   it('still fails offline when nothing was saved', async () => {
     down = true
     await expect(api.me()).rejects.toBeInstanceOf(OfflineError)

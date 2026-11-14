@@ -5,6 +5,8 @@
  * Every function takes the storage, so tests can pass a fake; storage failures are swallowed
  * (private mode, quota, blocked site data) and just mean there's no saved copy.
  */
+import { forgetPositions } from './setlist-position.js'
+
 const KEY = 'offline-copy'
 
 const empty = (me = null) => ({ me, setlists: {} })
@@ -26,10 +28,12 @@ function write(copy, storage) {
   }
 }
 
-/** Saves /api/me's user. A different user than the saved one starts a fresh copy. */
+/** Saves /api/me's user. A different user than the saved one starts a fresh copy and forgets the last one's tune positions. */
 export function saveMe(me, storage = globalThis.localStorage) {
   const copy = readCopy(storage)
-  write(copy.me?.id === me.id ? { ...copy, me } : empty(me), storage)
+  if (copy.me?.id === me.id) return write({ ...copy, me }, storage)
+  if (copy.me) forgetPositions(storage)
+  write(empty(me), storage)
 }
 
 /** Keeps saved preferences in step with the server's after they're saved. */

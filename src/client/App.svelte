@@ -11,30 +11,50 @@
   import { connection } from './lib/connection.svelte.js'
   import { rememberRoute, startRoute } from './lib/last-route.js'
   import { matchRoute } from './lib/router.js'
-  import { loadSession } from './lib/session.svelte.js'
-
-  // Opened without a route (the installed app's start URL): go back to the page you were on.
-  const start = startRoute(location.hash)
-  if (start) history.replaceState(null, '', start)
-  rememberRoute(location.hash)
+  import { loadSession, session } from './lib/session.svelte.js'
 
   let hash = $state(location.hash)
   const route = $derived(matchRoute(hash))
   let sidebarOpen = $state(false)
 
   // Pages read the user's preferences (defaults for new tunes, hidden badges), so load them first.
-  const sessionReady = loadSession()
-  // Then keep the active setlists on this device, so they work offline. A failure just leaves the older copy.
-  sessionReady.then(saveActiveSetlistsOffline).catch(() => {})
+  // Pages render only once this resolves, so the restored route shows without a flash of the Tunes page.
+  const sessionReady = loadSession().then(() => {
+    // Opened without a route (the installed app's start URL): back to this user's last page.
+    const start = startRoute(location.hash, session.user.id)
+    if (start) {
+      history.replaceState(null, '', start)
+      hash = start
+    }
+    rememberRoute(location.hash, session.user.id)
+  })
+  // Then keep the active setlists on this device, so they work offline; again whenever the app comes back to the
+  // foreground (at most once a minute) or online. A failure just leaves the older copy.
+  sessionReady.then(() => refreshOfflineCopy()).catch(() => {})
+
+  let lastRefresh = 0
+  function refreshOfflineCopy(force = false) {
+    if (!session.user || (!force && Date.now() - lastRefresh < 60_000)) return
+    lastRefresh = Date.now()
+    saveActiveSetlistsOffline().catch(() => {})
+  }
 
   function hashChanged() {
     hash = location.hash
-    rememberRoute(hash)
+    rememberRoute(hash, session.user?.id)
+  }
+
+  // Back online: one request clears the offline banner (pages showing the saved copy then reload), then refresh the copy.
+  function backOnline() {
+    api
+      .me()
+      .then(() => refreshOfflineCopy(true))
+      .catch(() => {})
   }
 </script>
 
-<!-- Back online: one request clears the offline banner (pages showing the saved copy then reload). -->
-<svelte:window onhashchange={hashChanged} ononline={() => api.me().catch(() => {})} />
+<svelte:window onhashchange={hashChanged} ononline={backOnline} />
+<svelte:document onvisibilitychange={() => document.visibilityState === 'visible' && refreshOfflineCopy()} />
 
 <Sidebar open={sidebarOpen} current={route.name} onclose={() => (sidebarOpen = false)} />
 

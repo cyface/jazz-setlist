@@ -7,7 +7,7 @@
   import { api } from '../lib/api.js'
   import { connection } from '../lib/connection.svelte.js'
   import { navigate } from '../lib/router.js'
-  import { recallPosition, rememberPosition } from '../lib/setlist-position.js'
+  import { findTune, recallPosition, rememberPosition } from '../lib/setlist-position.js'
   import { moveItem, numberSets } from '../../shared/setlist.js'
 
   let { id } = $props()
@@ -39,8 +39,11 @@
     // Offline, the setlist comes from the saved copy; the tune list (only needed to add tunes) can't load, and isn't needed.
     Promise.all([api.getSetlist(id), api.listArrangements().catch((e) => (e.offline ? [] : Promise.reject(e)))])
       .then(([s, a]) => {
+        // Item ids are new after a save elsewhere: keep the open tune open (and its metronome playing) by position + tune.
+        const open = selected && { index: selectedIndex, arrangementId: selected.arrangement.id }
         setlist = s
         items = s.items.map(toLocal)
+        if (open) selectedKey = findTune(tunes, open)?.key ?? null
         arrangements = a
         resetInfo()
         lastKey = recallPosition(id, tunes)

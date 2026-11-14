@@ -15,7 +15,15 @@ import {
 
 const memory = () => {
   const data = new Map()
-  return { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => data.set(k, String(v)), removeItem: (k) => data.delete(k) }
+  return {
+    getItem: (k) => data.get(k) ?? null,
+    setItem: (k, v) => data.set(k, String(v)),
+    removeItem: (k) => data.delete(k),
+    key: (i) => [...data.keys()][i] ?? null,
+    get length() {
+      return data.size
+    },
+  }
 }
 const blocked = () => {
   throw new Error('blocked')
@@ -79,9 +87,13 @@ describe('offline copy', () => {
     saveSetlist(setlist('s1'), storage)
     saveMe(me('u1'), storage)
     expect(savedSetlist('s1', storage)).not.toBeNull()
+    storage.setItem('setlist-position:s1', '{"index":0,"arrangementId":"a"}')
+    storage.setItem('theme', 'dark')
     saveMe(me('u2'), storage)
     expect(readCopy(storage).me.id).toBe('u2')
     expect(savedSetlist('s1', storage)).toBeNull()
+    expect(storage.getItem('setlist-position:s1')).toBeNull() // the last user's tune positions go too
+    expect(storage.getItem('theme')).toBe('dark') // the device's own settings stay
   })
 
   it('updates saved preferences', () => {

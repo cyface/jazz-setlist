@@ -6,6 +6,10 @@ export class OfflineError extends Error {
   offline = true
 }
 
+/** Reads give up after this long and count as offline (venue wifi that connects but passes nothing).
+    Writes don't time out: aborting one wouldn't undo it on the server. */
+export const READ_TIMEOUT_MS = 8000
+
 async function request(method, path, body) {
   let res
   try {
@@ -14,6 +18,7 @@ async function request(method, path, body) {
       credentials: 'same-origin',
       headers: body === undefined ? undefined : { 'content-type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal: method === 'GET' ? AbortSignal.timeout(READ_TIMEOUT_MS) : undefined,
     })
   } catch {
     // An expired Cloudflare Access session redirects to the login page on
@@ -84,7 +89,8 @@ export const api = {
   deleteSetlist: (id) => request('DELETE', `/setlists/${id}`).then(tap(() => offline.forgetSetlist(id))),
 }
 
-/** Saves every active setlist for offline use; run in the background once the app has loaded. */
+/** Saves every active setlist for offline use: in the background once the app has loaded, and again when it
+    comes back to the foreground or online (an installed app can stay open for days). */
 export async function saveActiveSetlistsOffline() {
   const rows = await api.listSetlists()
   if (connection.offline) return // those rows came from the saved copy

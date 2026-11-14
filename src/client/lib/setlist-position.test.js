@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { findTune, recallPosition, rememberPosition } from './setlist-position.js'
+import { findTune, forgetPositions, recallPosition, rememberPosition } from './setlist-position.js'
 
 const tune = (key, arrangementId) => ({ key, arrangement: { id: arrangementId } })
 const memory = () => {
   const data = new Map()
-  return { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => data.set(k, String(v)) }
+  return {
+    getItem: (k) => data.get(k) ?? null,
+    setItem: (k, v) => data.set(k, String(v)),
+    removeItem: (k) => data.delete(k),
+    key: (i) => [...data.keys()][i] ?? null,
+    get length() {
+      return data.size
+    },
+  }
 }
 
 describe('findTune', () => {
@@ -41,5 +49,28 @@ describe('remember and recall', () => {
     const junk = memory()
     junk.setItem('setlist-position:s1', '{not json')
     expect(recallPosition('s1', [tune('x1', 'a')], junk)).toBeNull()
+  })
+})
+
+describe('forgetPositions', () => {
+  it('forgets every setlist position and nothing else', () => {
+    const storage = memory()
+    const tunes = [tune('k1', 'a')]
+    rememberPosition('s1', tunes, 'k1', storage)
+    rememberPosition('s2', tunes, 'k1', storage)
+    storage.setItem('theme', 'dark')
+    forgetPositions(storage)
+    expect(recallPosition('s1', tunes, storage)).toBeNull()
+    expect(recallPosition('s2', tunes, storage)).toBeNull()
+    expect(storage.getItem('theme')).toBe('dark')
+  })
+
+  it('works without storage', () => {
+    const broken = {
+      get length() {
+        throw new Error('blocked')
+      },
+    }
+    expect(() => forgetPositions(broken)).not.toThrow()
   })
 })

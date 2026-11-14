@@ -20,50 +20,60 @@ const broken = {
 describe('last route', () => {
   it('reopens the remembered page when the app starts without a route', () => {
     const storage = memory()
-    rememberRoute('#/setlists/abc', storage)
-    expect(startRoute('', storage)).toBe('#/setlists/abc')
-    expect(startRoute('#', storage)).toBe('#/setlists/abc')
+    rememberRoute('#/setlists/abc', 'u1', storage)
+    expect(startRoute('', 'u1', storage)).toBe('#/setlists/abc')
+    expect(startRoute('#', 'u1', storage)).toBe('#/setlists/abc')
   })
 
   it('keeps a route given in the URL', () => {
     const storage = memory()
-    rememberRoute('#/setlists/abc', storage)
-    expect(startRoute('#/', storage)).toBeNull()
-    expect(startRoute('#/preferences', storage)).toBeNull()
+    rememberRoute('#/setlists/abc', 'u1', storage)
+    expect(startRoute('#/', 'u1', storage)).toBeNull()
+    expect(startRoute('#/preferences', 'u1', storage)).toBeNull()
   })
 
   it('remembers the Tunes page for an empty hash', () => {
     const storage = memory()
-    rememberRoute('#/setlists/abc', storage)
-    rememberRoute('', storage)
-    expect(startRoute('', storage)).toBe('#/')
+    rememberRoute('#/setlists/abc', 'u1', storage)
+    rememberRoute('', 'u1', storage)
+    expect(startRoute('', 'u1', storage)).toBe('#/')
   })
 
   it('does not remember forms or unknown pages', () => {
     const storage = memory()
-    rememberRoute('#/setlists', storage)
-    rememberRoute('#/arrangements/new', storage)
-    rememberRoute('#/arrangements/x/edit', storage)
-    rememberRoute('#/nope', storage)
-    expect(startRoute('', storage)).toBe('#/setlists')
+    rememberRoute('#/setlists', 'u1', storage)
+    rememberRoute('#/arrangements/new', 'u1', storage)
+    rememberRoute('#/arrangements/x/edit', 'u1', storage)
+    rememberRoute('#/nope', 'u1', storage)
+    expect(startRoute('', 'u1', storage)).toBe('#/setlists')
   })
 
   it('ignores a stored value that is not a page', () => {
     const storage = memory()
-    storage.setItem('last-route', '#/arrangements/new')
-    expect(startRoute('', storage)).toBeNull()
+    storage.setItem('last-route', JSON.stringify({ userId: 'u1', hash: '#/arrangements/new' }))
+    expect(startRoute('', 'u1', storage)).toBeNull()
+    storage.setItem('last-route', '#/setlists') // not JSON
+    expect(startRoute('', 'u1', storage)).toBeNull()
+  })
+
+  it('belongs to the user who was on it', () => {
+    const storage = memory()
+    rememberRoute('#/setlists/abc', 'u1', storage)
+    expect(startRoute('', 'u2', storage)).toBeNull()
+    rememberRoute('#/setlists', null, storage) // before the session loads: not remembered
+    expect(startRoute('', 'u1', storage)).toBe('#/setlists/abc')
   })
 
   it('forgets the route', () => {
     const storage = memory()
-    rememberRoute('#/setlists', storage)
+    rememberRoute('#/setlists', 'u1', storage)
     forgetRoute(storage)
-    expect(startRoute('', storage)).toBeNull()
+    expect(startRoute('', 'u1', storage)).toBeNull()
   })
 
   it('works without storage', () => {
-    expect(() => rememberRoute('#/setlists', broken)).not.toThrow()
-    expect(startRoute('', broken)).toBeNull()
+    expect(() => rememberRoute('#/setlists', 'u1', broken)).not.toThrow()
+    expect(startRoute('', 'u1', broken)).toBeNull()
     expect(() => forgetRoute(broken)).not.toThrow()
   })
 })

@@ -2,6 +2,7 @@
   import Icon from './Icon.svelte'
   import { forgetRoute } from '../lib/last-route.js'
   import { clearCopy } from '../lib/offline.js'
+  import { forgetPositions } from '../lib/setlist-position.js'
   import { applyTheme, readTheme } from '../lib/theme.js'
   import { initials, session } from '../lib/session.svelte.js'
   import { nextTheme } from '../../shared/theme.js'
@@ -20,6 +21,7 @@
   function forgetDevice() {
     clearCopy()
     forgetRoute()
+    forgetPositions()
   }
 
   function cycleTheme() {
