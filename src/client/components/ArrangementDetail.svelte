@@ -1,5 +1,6 @@
 <script>
   import Icon from './Icon.svelte'
+  import { connection } from '../lib/connection.svelte.js'
   import Metronome from './Metronome.svelte'
   import SoloOrder from './SoloOrder.svelte'
   import TuneBadges from './TuneBadges.svelte'
@@ -16,7 +17,9 @@
         .filter(Boolean)
         .join(' · ')}
     </p>
-    <a class="button edit" href="#/arrangements/{arrangement.id}/edit"><Icon name="edit" size={18} /> Edit</a>
+    {#if !connection.offline}
+      <a class="button edit" href="#/arrangements/{arrangement.id}/edit"><Icon name="edit" size={18} /> Edit</a>
+    {/if}
   </header>
 
   {#key arrangement.id}

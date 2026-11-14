@@ -1,3 +1,11 @@
+import { connection } from './connection.svelte.js'
+import * as offline from './offline.js'
+
+/** The server couldn't be reached (no network, or an expired Access session redirecting to another origin). */
+export class OfflineError extends Error {
+  offline = true
+}
+
 async function request(method, path, body) {
   let res
   try {
@@ -9,9 +17,11 @@ async function request(method, path, body) {
     })
   } catch {
     // An expired Cloudflare Access session redirects to the login page on
-    // another origin, which fetch reports as a network error.
-    throw new Error('Could not reach the server. If your session expired, reload the page.')
+    // another origin, which fetch reports as a network error too.
+    connection.offline = true
+    throw new OfflineError('Could not reach the server. If your session expired, reload the page.')
   }
+  connection.offline = false
   if (!res.ok) {
     const data = await res.json().catch(() => null)
     const detail = data?.issues?.map((i) => `${i.path}: ${i.message}`).join('; ')
@@ -20,23 +30,63 @@ async function request(method, path, body) {
   return res.status === 204 ? null : res.json()
 }
 
+/** On a network error, `saved()` (the offline copy) instead, if there is one. */
+const orSaved = (promise, saved) =>
+  promise.catch((err) => {
+    const copy = err instanceof OfflineError ? saved() : null
+    if (copy == null) throw err
+    return copy
+  })
+
+/** Passes a response through after keeping the offline copy in step with it. */
+const tap = (fn) => (value) => {
+  fn(value)
+  return value
+}
+
+const setlist = (promise) => promise.then((r) => r.setlist).then(tap(offline.saveSetlist))
+
 export const api = {
-  me: () => request('GET', '/me').then((r) => r.user),
-  savePreferences: (preferences) => request('PUT', '/me/preferences', preferences).then((r) => r.preferences),
+  me: () =>
+    orSaved(
+      request('GET', '/me').then((r) => r.user).then(tap(offline.saveMe)),
+      () => offline.readCopy().me,
+    ),
+  savePreferences: (preferences) =>
+    request('PUT', '/me/preferences', preferences)
+      .then((r) => r.preferences)
+      .then(tap(offline.savePreferences)),
 
   listArrangements: () => request('GET', '/arrangements').then((r) => r.arrangements),
   getArrangement: (id) => request('GET', `/arrangements/${id}`).then((r) => r.arrangement),
   createArrangement: (data) => request('POST', '/arrangements', data).then((r) => r.arrangement),
-  updateArrangement: (id, data) => request('PUT', `/arrangements/${id}`, data).then((r) => r.arrangement),
-  deleteArrangement: (id) => request('DELETE', `/arrangements/${id}`),
+  updateArrangement: (id, data) =>
+    request('PUT', `/arrangements/${id}`, data)
+      .then((r) => r.arrangement)
+      .then(tap(offline.saveArrangement)),
+  deleteArrangement: (id) => request('DELETE', `/arrangements/${id}`).then(tap(() => offline.forgetArrangement(id))),
 
   listSetlists: (contains) =>
-    request('GET', contains ? `/setlists?contains=${encodeURIComponent(contains)}` : '/setlists').then((r) => r.setlists),
-  getSetlist: (id) => request('GET', `/setlists/${id}`).then((r) => r.setlist),
-  createSetlist: (data) => request('POST', '/setlists', data).then((r) => r.setlist),
-  updateSetlist: (id, data) => request('PUT', `/setlists/${id}`, data).then((r) => r.setlist),
-  setSetlistArchived: (id, archived) => request('PUT', `/setlists/${id}/archived`, { archived }).then((r) => r.setlist),
-  addTuneToSetlist: (id, arrangementId) => request('POST', `/setlists/${id}/items`, { arrangementId }).then((r) => r.setlist),
-  saveSetlistItems: (id, items) => request('PUT', `/setlists/${id}/items`, { items }).then((r) => r.setlist),
-  deleteSetlist: (id) => request('DELETE', `/setlists/${id}`),
+    contains
+      ? request('GET', `/setlists?contains=${encodeURIComponent(contains)}`).then((r) => r.setlists)
+      : orSaved(
+          request('GET', '/setlists')
+            .then((r) => r.setlists)
+            .then(tap((rows) => offline.keepSetlists(rows.filter((s) => !s.archivedAt).map((s) => s.id)))),
+          () => offline.savedSetlistRows(),
+        ),
+  getSetlist: (id) => orSaved(setlist(request('GET', `/setlists/${id}`)), () => offline.savedSetlist(id)),
+  createSetlist: (data) => setlist(request('POST', '/setlists', data)),
+  updateSetlist: (id, data) => setlist(request('PUT', `/setlists/${id}`, data)),
+  setSetlistArchived: (id, archived) => setlist(request('PUT', `/setlists/${id}/archived`, { archived })),
+  addTuneToSetlist: (id, arrangementId) => setlist(request('POST', `/setlists/${id}/items`, { arrangementId })),
+  saveSetlistItems: (id, items) => setlist(request('PUT', `/setlists/${id}/items`, { items })),
+  deleteSetlist: (id) => request('DELETE', `/setlists/${id}`).then(tap(() => offline.forgetSetlist(id))),
+}
+
+/** Saves every active setlist for offline use; run in the background once the app has loaded. */
+export async function saveActiveSetlistsOffline() {
+  const rows = await api.listSetlists()
+  if (connection.offline) return // those rows came from the saved copy
+  await Promise.all(rows.filter((s) => !s.archivedAt).map((s) => api.getSetlist(s.id)))
 }

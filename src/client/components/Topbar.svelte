@@ -1,5 +1,7 @@
 <script>
   import Icon from './Icon.svelte'
+  import { forgetRoute } from '../lib/last-route.js'
+  import { clearCopy } from '../lib/offline.js'
   import { applyTheme, readTheme } from '../lib/theme.js'
   import { initials, session } from '../lib/session.svelte.js'
   import { nextTheme } from '../../shared/theme.js'
@@ -12,6 +14,12 @@
     system: { icon: 'auto', label: 'Theme: match system' },
     dark: { icon: 'moon', label: 'Theme: dark' },
     light: { icon: 'sun', label: 'Theme: light' },
+  }
+
+  /** The next person on this browser shouldn't see this user's saved setlists or land on their last page. */
+  function forgetDevice() {
+    clearCopy()
+    forgetRoute()
   }
 
   function cycleTheme() {
@@ -56,7 +64,7 @@
           <a role="menuitem" href="#/preferences" onclick={() => (menuOpen = false)}>
             <Icon name="preferences" size={18} /> Preferences
           </a>
-          <a role="menuitem" href="/cdn-cgi/access/logout">
+          <a role="menuitem" href="/cdn-cgi/access/logout" onclick={forgetDevice}>
             <Icon name="logout" size={18} /> Log out
           </a>
         </div>

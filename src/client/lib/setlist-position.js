@@ -1,5 +1,5 @@
 /**
- * Remembers the last tune opened in each setlist (for this browser session),
+ * Remembers the last tune opened in each setlist (kept in localStorage, so it survives closing the app),
  * so the setlist can highlight it when you come back to the list.
  * Item ids change when a setlist is saved, so the position is kept as the
  * tune's index plus its arrangement id.
@@ -14,7 +14,7 @@ export function findTune(tunes, position) {
   return tunes.find((t) => t.arrangement?.id === position.arrangementId) ?? null
 }
 
-export function rememberPosition(setlistId, tunes, key, storage = globalThis.sessionStorage) {
+export function rememberPosition(setlistId, tunes, key, storage = globalThis.localStorage) {
   const index = tunes.findIndex((t) => t.key === key)
   if (index < 0) return
   try {
@@ -25,7 +25,7 @@ export function rememberPosition(setlistId, tunes, key, storage = globalThis.ses
 }
 
 /** The key of the remembered tune in `tunes`, or null. */
-export function recallPosition(setlistId, tunes, storage = globalThis.sessionStorage) {
+export function recallPosition(setlistId, tunes, storage = globalThis.localStorage) {
   try {
     return findTune(tunes, JSON.parse(storage.getItem(storageKey(setlistId))))?.key ?? null
   } catch {
