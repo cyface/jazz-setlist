@@ -28,6 +28,13 @@ const pwa = VitePWA({
     ],
   },
   workbox: {
+    // A new release's worker takes over open pages at once (main.js then reloads them once, held while the
+    // metronome plays), and a first install controls the page without a reload, so it works offline right away.
+    // The plugin sets these for autoUpdate only when it injects the registration; main.js registers /sw.js itself.
+    // Safe because the client has no lazy chunks: a page not reloaded yet (metronome playing) never asks for a file
+    // the new worker dropped from the precache. Code-splitting would need a fallback for a failed import().
+    skipWaiting: true,
+    clientsClaim: true,
     globPatterns: ['**/*.{js,css,png,svg,ico,woff2}'],
     // The shell loads /assets/app.js?v=<version>; match the precached file.
     ignoreURLParametersMatching: [/^v$/],
@@ -57,14 +64,18 @@ const pwa = VitePWA({
   },
 })
 
-// End-to-end runs (Playwright, e2e/) set E2E=1: their own local D1 under .wrangler/e2e and a fixed test user,
-// on another port, so they never touch your dev data or a running `pnpm dev`. (.env is not loaded for them:
-// playwright.config.js sets CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false.)
+// End-to-end runs (Playwright, e2e/) set E2E=1: their own local D1 (E2E_STATE, default .wrangler/e2e) and a fixed
+// test user, on other ports, so they never touch your dev data or a running `pnpm dev`. (.env is not loaded for them:
+// playwright.config.js sets CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false.) The service worker tests preview a normal
+// production build; their test user comes from dist/jazz_setlist/.dev.vars (local preview only, never deployed).
 // Never for a build: the test user would land in the deploy config's vars (scripts/check-deploy-config.js checks).
 const e2e = process.env.E2E === '1'
 const E2E_PORT = 5189
+const E2E_PREVIEW_PORT = 5190
 const E2E_USER = 'e2e@example.com'
-const cloudflareOptions = e2e ? { persistState: { path: '.wrangler/e2e' }, config: { vars: { DEV_AUTH_EMAIL: E2E_USER } } } : {}
+const cloudflareOptions = e2e
+  ? { persistState: { path: process.env.E2E_STATE ?? '.wrangler/e2e' }, config: { vars: { DEV_AUTH_EMAIL: E2E_USER } } }
+  : {}
 
 // Only the browser build gets a manifest and service worker, not the Worker.
 for (const plugin of pwa) plugin.applyToEnvironment = (env) => env.name === 'client'
@@ -89,5 +100,6 @@ export default defineConfig(({ command }) => {
       },
     },
     server: { port: e2e ? E2E_PORT : 5188, strictPort: true },
+    preview: e2e ? { port: E2E_PREVIEW_PORT, strictPort: true } : undefined,
   }
 })

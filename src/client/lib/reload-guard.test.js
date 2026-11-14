@@ -77,4 +77,27 @@ describe('metronome holds reloads while playing', () => {
     metronome.stop()
     expect(reload).toHaveBeenCalledTimes(1)
   })
+
+  it('plays once when started twice while the audio context resumes, and stops for good', async () => {
+    vi.useFakeTimers()
+    try {
+      const { metronome } = setup()
+      const schedules = vi.spyOn(globalThis, 'setInterval')
+      await Promise.all([metronome.start(), metronome.start()])
+      expect(schedules).toHaveBeenCalledTimes(1)
+      metronome.destroy()
+      expect(() => vi.advanceTimersByTime(1000)).not.toThrow() // no interval left running without a context
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stays stopped when stopped while the audio context resumes', async () => {
+    const { reload, guard, metronome } = setup()
+    const starting = metronome.start()
+    metronome.stop()
+    expect(await starting).toBe(false)
+    guard.request()
+    expect(reload).toHaveBeenCalledTimes(1) // no hold taken
+  })
 })

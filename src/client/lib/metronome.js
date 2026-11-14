@@ -39,6 +39,8 @@ export function createMetronome({
   let nextTime = 0
   let beat = 0
   let queue = []
+  // Counts starts and stops, so a start that waited on the audio context gives way to a later start or stop.
+  let run = 0
 
   function click(time, accent) {
     const osc = ctx.createOscillator()
@@ -72,9 +74,13 @@ export function createMetronome({
   }
 
   return {
+    /** Starts playing (once, however often it's called); false if a stop came while the audio context resumed. */
     async start() {
+      if (timer) return true
+      const thisRun = ++run
       ctx ??= createContext()
       await ctx.resume()
+      if (thisRun !== run) return Boolean(timer)
       beat = 0
       queue = []
       nextTime = ctx.currentTime + 0.05
@@ -82,9 +88,12 @@ export function createMetronome({
       timer = setInterval(schedule, LOOKAHEAD_MS)
       frame = requestAnimationFrame(draw)
       releaseReload ??= holdReload()
+      return true
     },
     stop() {
+      run++
       clearInterval(timer)
+      timer = undefined
       cancelAnimationFrame(frame)
       queue = []
       onBeat(-1)
