@@ -18,3 +18,7 @@ coverage
 *.pln
 scripts/polynome/out/
 __pycache__/
+
+# Playwright output
+test-results/
+playwright-report/

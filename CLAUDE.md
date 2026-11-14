@@ -28,6 +28,7 @@ drizzle/       SQL migrations (generated; do not hand-edit). Data migrations: `d
 ```bash
 pnpm dev                # Vite + Worker on http://localhost:5188
 pnpm test               # Vitest: node tests + component tests in Chromium (needs `pnpm exec playwright install chromium` once)
+pnpm test:e2e           # Playwright end-to-end tests (e2e/), own dev server on :5189 with a fresh local D1
 pnpm lint               # ESLint
 pnpm check              # lint + test + build — run before calling work done
 pnpm db:generate        # drizzle-kit generate after editing src/db/schema.js
@@ -43,7 +44,7 @@ pnpm import:polynome <backup.pln> <email> [--local|--remote]   # PolyNome backup
 ## Deployment (GitHub Actions → Cloudflare)
 
 - Repo: `git@github.com:cyface/jazz-setlist.git`, branch `main`. Everything (Worker + D1 `jazz-setlist`) lives in the timlwhite Cloudflare account `16805f1fb394761354e4f3f30bafa8c4`, set by `account_id` in `wrangler.jsonc`. Never deploy to another account.
-- `.github/workflows/ci.yml`: every PR runs `pnpm check`.
+- `.github/workflows/ci.yml`: every PR runs `pnpm check` and, in a second job, `pnpm test:e2e` (report and traces uploaded as an artifact on failure).
 - `.github/workflows/deploy.yml`: every push/merge to `main` runs `pnpm check`, then `pnpm release:ci` (applies pending D1 migrations, then `wrangler deploy`). Needs repo secret `CLOUDFLARE_API_TOKEN` (timlwhite account: Workers Scripts Edit + D1 Edit).
 - Work on a branch and merge by PR (`gh pr merge --squash`); head branches are deleted on merge. Merging to `main` deploys to production.
 - `pnpm build` writes `dist/client` (assets) and `dist/jazz_setlist/wrangler.json`; `wrangler deploy` picks up that generated config automatically.
@@ -95,6 +96,7 @@ Imports a PolyNome Pro backup (`.pln`, git-ignored) as tunes and setlists. Pipel
 - New behavior gets a test in the same change; bug fixes get a regression test.
 - Test files sit next to source as `*.test.js`.
 - Component tests: `src/client/**/*.browser.test.js` run in a real Chromium (Vitest browser mode, `browser` project in `vitest.config.js`). `await render(Component, props)` from `vitest-browser-svelte`, query with locators (`screen.getByRole(...)`) and assert with `expect.element(...)` (it retries) or `expect.poll`. Mock `lib/api.js` with `vi.mock` so tests need no Worker or D1; test data shapes are in `src/client/test/fixtures.js`. `src/client/test/setup.js` resets the hash, localStorage and `connection.offline` before each test. Give `beforeEach` a block body: a function it returns (e.g. `() => mock.mockReset()` returns the mock) runs as cleanup after the test. Page logic (routing, offline, edit mode) belongs here; pure logic stays in node tests.
+- End-to-end tests: `e2e/*.spec.js` (Playwright, Chromium), for flows across the Worker, D1 and client. `playwright.config.js` starts `vite` with `E2E=1` (see `vite.config.js`): port 5189, a fresh D1 under `.wrangler/e2e` with all migrations, and the fixed user `e2e@example.com` (`.env` isn't loaded; `vite build` refuses `E2E=1`, and `scripts/check-deploy-config.js`, run by `check` and `release`, fails a build whose generated `wrangler.json` sets any vars), so a running `pnpm dev` and your dev data are untouched. Tests run one at a time; the `data` fixture (`e2e/fixtures.js`) creates tunes/setlists through the API and deletes them afterwards, and `gig` is a ready-made two-set setlist. Phone tests use `devices['Pixel 7']`; `longPress()` sends real touch events over CDP. Keep the suite small (main flows); details go in component tests.
 
 ## Git
 
