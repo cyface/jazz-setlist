@@ -50,8 +50,11 @@ export const test = base.extend({
       },
     }
     await use(data)
-    for (const id of made.setlists) await request.delete(`/api/setlists/${id}`)
-    for (const id of made.tunes) await request.delete(`/api/arrangements/${id}`)
+    // Leftovers would break later tests in confusing ways, so a failed delete fails this one. (404: the test deleted it.)
+    for (const path of [...made.setlists.map((id) => `/api/setlists/${id}`), ...made.tunes.map((id) => `/api/arrangements/${id}`)]) {
+      const response = await request.delete(path)
+      expect([204, 404], `DELETE ${path} → ${response.status()}`).toContain(response.status())
+    }
   },
 
   /** A gig: set 1 Blue Bossa, So What · break · set 2 Autumn Leaves, Sunny. */

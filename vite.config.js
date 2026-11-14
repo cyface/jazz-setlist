@@ -60,6 +60,7 @@ const pwa = VitePWA({
 // End-to-end runs (Playwright, e2e/) set E2E=1: their own local D1 under .wrangler/e2e and a fixed test user,
 // on another port, so they never touch your dev data or a running `pnpm dev`. (.env is not loaded for them:
 // playwright.config.js sets CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false.)
+// Never for a build: the test user would land in the deploy config's vars (scripts/check-deploy-config.js checks).
 const e2e = process.env.E2E === '1'
 const E2E_PORT = 5189
 const E2E_USER = 'e2e@example.com'
@@ -68,22 +69,25 @@ const cloudflareOptions = e2e ? { persistState: { path: '.wrangler/e2e' }, confi
 // Only the browser build gets a manifest and service worker, not the Worker.
 for (const plugin of pwa) plugin.applyToEnvironment = (env) => env.name === 'client'
 
-export default defineConfig({
-  ...sharedConfig,
-  plugins: [svelte(), cloudflare(cloudflareOptions), pwa],
-  environments: {
-    client: {
-      build: {
-        rollupOptions: {
-          input: { app: 'src/client/main.js' },
-          output: {
-            entryFileNames: 'assets/[name].js',
-            chunkFileNames: 'assets/[name]-[hash].js',
-            assetFileNames: 'assets/[name][extname]',
+export default defineConfig(({ command }) => {
+  if (e2e && command === 'build') throw new Error('E2E=1 is for the e2e servers only; unset it to build.')
+  return {
+    ...sharedConfig,
+    plugins: [svelte(), cloudflare(cloudflareOptions), pwa],
+    environments: {
+      client: {
+        build: {
+          rollupOptions: {
+            input: { app: 'src/client/main.js' },
+            output: {
+              entryFileNames: 'assets/[name].js',
+              chunkFileNames: 'assets/[name]-[hash].js',
+              assetFileNames: 'assets/[name][extname]',
+            },
           },
         },
       },
     },
-  },
-  server: { port: e2e ? E2E_PORT : 5188, strictPort: true },
+    server: { port: e2e ? E2E_PORT : 5188, strictPort: true },
+  }
 })
