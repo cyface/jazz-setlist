@@ -29,4 +29,9 @@ export default [
     files: ['*.js', 'scripts/**/*.js', 'src/**/*.test.{js,jsx}', 'src/server/test-env.js'],
     languageOptions: { globals: globals.node },
   },
+  {
+    // Playwright specs run in Node but pass functions to page.evaluate(), which run in the page.
+    files: ['e2e/**/*.js'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
 ]

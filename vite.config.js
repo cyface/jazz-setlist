@@ -57,12 +57,20 @@ const pwa = VitePWA({
   },
 })
 
+// End-to-end runs (Playwright, e2e/) set E2E=1: their own local D1 under .wrangler/e2e and a fixed test user,
+// on another port, so they never touch your dev data or a running `pnpm dev`. (.env is not loaded for them:
+// playwright.config.js sets CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false.)
+const e2e = process.env.E2E === '1'
+const E2E_PORT = 5189
+const E2E_USER = 'e2e@example.com'
+const cloudflareOptions = e2e ? { persistState: { path: '.wrangler/e2e' }, config: { vars: { DEV_AUTH_EMAIL: E2E_USER } } } : {}
+
 // Only the browser build gets a manifest and service worker, not the Worker.
 for (const plugin of pwa) plugin.applyToEnvironment = (env) => env.name === 'client'
 
 export default defineConfig({
   ...sharedConfig,
-  plugins: [svelte(), cloudflare(), pwa],
+  plugins: [svelte(), cloudflare(cloudflareOptions), pwa],
   environments: {
     client: {
       build: {
@@ -77,5 +85,5 @@ export default defineConfig({
       },
     },
   },
-  server: { port: 5188, strictPort: true },
+  server: { port: e2e ? E2E_PORT : 5188, strictPort: true },
 })
