@@ -15,3 +15,8 @@ export const ENTRY_OPTIONS = [
   { value: 'top', label: 'From the top', icon: 'drum' },
   { value: 'later', label: 'Come in later', icon: 'drum-later' },
 ]
+export const THEME_OPTIONS = [
+  { value: 'system', label: 'Match system', icon: 'auto' },
+  { value: 'dark', label: 'Dark', icon: 'moon' },
+  { value: 'light', label: 'Light', icon: 'sun' },
+]

@@ -1,14 +1,17 @@
 <script>
   import ChoiceGroup from '../components/ChoiceGroup.svelte'
   import TuneBadges from '../components/TuneBadges.svelte'
-  import { ENTRY_OPTIONS, FEEL_OPTIONS, IMPLEMENT_OPTIONS } from '../lib/choices.js'
+  import { ENTRY_OPTIONS, FEEL_OPTIONS, IMPLEMENT_OPTIONS, THEME_OPTIONS } from '../lib/choices.js'
   import { savePreferences, session } from '../lib/session.svelte.js'
+  import { applyTheme, readTheme } from '../lib/theme.js'
   import { TIME_SIGNATURES, parseTimeSignature } from '../../shared/attributes.js'
 
   let form = $state($state.snapshot(session.preferences))
   let saving = $state(false)
   let status = $state('')
   let error = $state('')
+  // Kept on this device (the shell applies it before first paint), and applied as soon as it's picked: not part of Save.
+  let theme = $state(readTheme())
 
   // A tune that matches the defaults, and one that differs in implement, entry and time signature.
   const samples = $derived.by(() => {
@@ -40,6 +43,12 @@
 
 <section class="narrow">
   <h1>Preferences</h1>
+
+  <section class="appearance">
+    <h2>Appearance</h2>
+    <p class="muted hint">Applies right away, on this device only.</p>
+    <ChoiceGroup legend="Theme" name="theme" options={THEME_OPTIONS} bind:value={() => theme, (t) => applyTheme((theme = t))} />
+  </section>
 
   <form class="form" onsubmit={save} oninput={() => (status = '')}>
     <section>
@@ -148,6 +157,9 @@
   }
   .signature-field {
     max-width: 12rem;
+  }
+  .appearance {
+    margin-top: 1rem;
   }
   .actions {
     align-items: center;
