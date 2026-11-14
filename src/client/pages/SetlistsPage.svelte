@@ -2,6 +2,7 @@
   import Icon from '../components/Icon.svelte'
   import { api } from '../lib/api.js'
   import { navigate } from '../lib/router.js'
+  import { activeSetlists, setlistWhenWhere, tuneCountLabel } from '../lib/setlists.js'
 
   /** true on #/setlists/archived. */
   let { archived = false } = $props()
@@ -13,7 +14,7 @@
   /** The last archive/restore, so it can be undone: { id, name, archived }. */
   let lastChange = $state(null)
 
-  const active = $derived(setlists.filter((s) => !s.archivedAt))
+  const active = $derived(activeSetlists(setlists))
   const archivedList = $derived(setlists.filter((s) => s.archivedAt))
   const shown = $derived(archived ? archivedList : active)
 
@@ -50,9 +51,6 @@
     await setArchived(s, !lastChange.archived)
     lastChange = null
   }
-
-  const formatDate = (d) =>
-    d ? new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : ''
 </script>
 
 <section class="narrow">
@@ -93,8 +91,8 @@
         <li class="row setlist-row">
           <a class="open" href="#/setlists/{s.id}">
             <span class="title">{s.name}</span>
-            <span class="muted">{[formatDate(s.showDate), s.venue].filter(Boolean).join(' · ')}</span>
-            <span class="count">{s.tuneCount} {s.tuneCount === 1 ? 'tune' : 'tunes'}</span>
+            <span class="muted">{setlistWhenWhere(s)}</span>
+            <span class="count">{tuneCountLabel(s.tuneCount)}</span>
           </a>
           {#if s.archivedAt}
             <button class="icon-button" onclick={() => setArchived(s, false)} aria-label="Restore {s.name}" title="Move back to active">

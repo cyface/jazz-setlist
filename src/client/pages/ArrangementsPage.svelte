@@ -1,4 +1,5 @@
 <script>
+  import ActiveSetlists from '../components/ActiveSetlists.svelte'
   import AddToSetlist from '../components/AddToSetlist.svelte'
   import ArrangementDetail from '../components/ArrangementDetail.svelte'
   import Icon from '../components/Icon.svelte'
@@ -30,6 +31,7 @@
 
 <div class="split" class:has-selection={selected}>
   <section class="list-pane">
+    <ActiveSetlists />
     <div class="toolbar">
       <h1>Tunes</h1>
       <a class="button primary" href="#/arrangements/new"><Icon name="plus" size={18} /> New tune</a>

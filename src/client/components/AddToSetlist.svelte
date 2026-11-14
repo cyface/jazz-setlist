@@ -2,6 +2,7 @@
   import Icon from './Icon.svelte'
   import { api } from '../lib/api.js'
   import { addMenu, addedMessage } from '../lib/add-to-setlist.js'
+  import { tuneCountLabel } from '../lib/setlists.js'
 
   let dialog = $state()
   let tune = $state(null)
@@ -80,7 +81,7 @@
         <button class="choice" disabled={busy} onclick={() => add(s)}>
           <span class="name"><Icon name="plus" size={16} /> Add to {s.name}</span>
           <span class="muted">
-            {[formatDate(s.showDate), `${s.tuneCount} ${s.tuneCount === 1 ? 'tune' : 'tunes'}`, s.hasTune && 'already has it']
+            {[formatDate(s.showDate), tuneCountLabel(s.tuneCount), s.hasTune && 'already has it']
               .filter(Boolean)
               .join(' · ')}
           </span>
