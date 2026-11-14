@@ -4,6 +4,9 @@
   import { addMenu, addedMessage } from '../lib/add-to-setlist.js'
   import { tuneCountLabel } from '../lib/setlists.js'
 
+  /** Called with the saved setlist after a tune is added. */
+  let { onadded } = $props()
+
   let dialog = $state()
   let tune = $state(null)
   let choices = $state([])
@@ -44,6 +47,7 @@
     try {
       const saved = await api.addTuneToSetlist(setlist.id, tune.id)
       if (dialog.open) dialog.close()
+      onadded?.(saved)
       show({ text: addedMessage(tune, saved), href: `#/setlists/${saved.id}`, link: 'Open' })
     } catch (e) {
       if (dialog.open) dialog.close()

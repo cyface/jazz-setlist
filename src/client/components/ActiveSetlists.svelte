@@ -1,7 +1,7 @@
 <script>
   import Icon from './Icon.svelte'
   import { api } from '../lib/api.js'
-  import { activeSetlists, setlistWhenWhere, tuneCountLabel } from '../lib/setlists.js'
+  import { activeSetlists, setlistWhenWhere, tuneCountLabel, withSavedSetlist } from '../lib/setlists.js'
 
   /** The current shows, one tap from the Tunes page. Nothing at all when there are none. */
   let setlists = $state([])
@@ -11,6 +11,11 @@
     .then((rows) => (setlists = activeSetlists(rows)))
     // The tune list below is the page's main content and reports its own errors; a missing shortcut needs no second message.
     .catch(() => {})
+
+  /** A tune was added from this page: keep the shortcut's count current. */
+  export function update(saved) {
+    setlists = withSavedSetlist(setlists, saved)
+  }
 </script>
 
 {#if setlists.length}

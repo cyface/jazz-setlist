@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { activeSetlists, formatShowDate, setlistWhenWhere, tuneCountLabel } from './setlists.js'
+import { activeSetlists, formatShowDate, setlistWhenWhere, tuneCountLabel, withSavedSetlist } from './setlists.js'
 
 describe('activeSetlists', () => {
   it('keeps unarchived setlists in their order', () => {
@@ -33,5 +33,24 @@ describe('tuneCountLabel', () => {
     expect(tuneCountLabel(1)).toBe('1 tune')
     expect(tuneCountLabel(0)).toBe('0 tunes')
     expect(tuneCountLabel(12)).toBe('12 tunes')
+  })
+})
+
+describe('withSavedSetlist', () => {
+  it('updates the saved setlist\'s tune count, counting tunes but not breaks', () => {
+    const rows = [
+      { id: 'a', name: 'Gig', tuneCount: 1 },
+      { id: 'b', name: 'Other', tuneCount: 5 },
+    ]
+    const saved = { id: 'a', name: 'Gig', showDate: null, venue: null, items: [{ kind: 'tune' }, { kind: 'break' }, { kind: 'tune' }] }
+    expect(withSavedSetlist(rows, saved)).toEqual([
+      { id: 'a', name: 'Gig', showDate: null, venue: null, tuneCount: 2 },
+      { id: 'b', name: 'Other', tuneCount: 5 },
+    ])
+  })
+
+  it('leaves the rows alone for a setlist not in them', () => {
+    const rows = [{ id: 'a', tuneCount: 1 }]
+    expect(withSavedSetlist(rows, { id: 'z', items: [] })).toEqual(rows)
   })
 })
