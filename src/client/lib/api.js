@@ -30,7 +30,7 @@ async function request(method, path, body) {
   if (!res.ok) {
     const data = await res.json().catch(() => null)
     const detail = data?.issues?.map((i) => `${i.path}: ${i.message}`).join('; ')
-    throw new Error(detail || data?.error || `${res.status} ${res.statusText}`)
+    throw Object.assign(new Error(detail || data?.error || `${res.status} ${res.statusText}`), { status: res.status })
   }
   return res.status === 204 ? null : res.json()
 }

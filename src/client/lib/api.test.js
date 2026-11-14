@@ -97,6 +97,7 @@ describe('api offline fallback', () => {
     const err = await api.getSetlist('missing').catch((e) => e)
     expect(err).not.toBeInstanceOf(OfflineError)
     expect(err.message).toBe('Not found')
+    expect(err.status).toBe(404)
   })
 
   it('ignores another user\'s saved copy', async () => {

@@ -75,11 +75,11 @@
         {#if route.name === 'arrangements'}
           <ArrangementsPage selectedId={route.id} />
         {:else if route.name === 'arrangement-edit'}
-          <ArrangementEditPage id={route.id} />
+          <ArrangementEditPage id={route.id} from={route.from} />
         {:else if route.name === 'setlists'}
           <SetlistsPage archived={route.archived} />
         {:else if route.name === 'setlist'}
-          <SetlistPage id={route.id} />
+          <SetlistPage id={route.id} open={route.open} />
         {:else if route.name === 'preferences'}
           <PreferencesPage />
         {:else}
