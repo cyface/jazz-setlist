@@ -39,6 +39,10 @@ describe('SetlistPage', () => {
     await expect
       .element(detail(screen).getByRole('link', { name: 'Edit' }))
       .toHaveAttribute('href', `#/arrangements/${SO_WHAT.id}/edit?setlist=s1&tune=1`)
+    await expect.element(screen.getByRole('button', { name: 'Prev' })).toBeEnabled()
+    await screen.getByRole('button', { name: 'Prev' }).click()
+    await expect.element(detail(screen).getByText('Set 1 · Tune 1')).toBeVisible()
+    await expect.element(screen.getByRole('button', { name: 'Prev' })).toBeDisabled()
   })
 
   it('reopens the tune it was asked to (back from editing it), the right copy of a repeated tune, then drops the request from the URL', async () => {
@@ -80,7 +84,7 @@ describe('SetlistPage', () => {
     expect(screen.getByRole('button', { name: 'Move up' }).elements()).toHaveLength(0)
 
     await screen.getByRole('button', { name: 'Edit' }).click()
-    expect(screen.getByRole('button', { name: 'Move up' }).elements()).toHaveLength(6)
+    await expect.poll(() => screen.getByRole('button', { name: 'Move up' }).elements()).toHaveLength(6)
     await expect.element(screen.getByRole('textbox', { name: 'Set break note' })).toHaveValue('20 min')
 
     await screen.getByRole('button', { name: 'Done' }).click()

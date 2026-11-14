@@ -1,3 +1,4 @@
+import { tick } from 'svelte'
 import { describe, expect, it, vi } from 'vitest'
 import { render } from 'vitest-browser-svelte'
 import ActiveSetlists from './ActiveSetlists.svelte'
@@ -25,7 +26,8 @@ describe('ActiveSetlists', () => {
   it('shows nothing when every setlist is archived', async () => {
     vi.mocked(api.listSetlists).mockResolvedValue([row('s0', 'Old Gig', { archivedAt: '2026-01-01T00:00:00Z' })])
     const screen = await render(ActiveSetlists)
-    await vi.waitFor(() => expect(api.listSetlists).toHaveBeenCalled())
+    await api.listSetlists.mock.results.at(-1).value
+    await tick()
     expect(screen.getByRole('navigation').elements()).toHaveLength(0)
   })
 

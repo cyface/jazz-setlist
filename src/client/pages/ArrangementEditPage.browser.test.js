@@ -38,10 +38,12 @@ describe('ArrangementEditPage leaving the form', () => {
   })
 
   it('without a setlist, Save and Cancel go to the tune', async () => {
+    const before = history.length
     const screen = await render(ArrangementEditPage, { id: SO_WHAT.id })
     await expect.element(screen.getByRole('link', { name: 'Cancel' })).toHaveAttribute('href', `#/arrangements/${SO_WHAT.id}`)
     await screen.getByRole('button', { name: 'Save' }).click()
     await expect.poll(() => location.hash).toBe(`#/arrangements/${SO_WHAT.id}`)
+    expect(history.length).toBe(before)
   })
 
   it('stays on the form and shows the error when saving fails', async () => {
