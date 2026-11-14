@@ -21,8 +21,8 @@
   })
 
   async function start() {
-    await metronome.start()
-    playing = true
+    playing = await metronome.start()
+    if (!playing) return
     wakeLock = await navigator.wakeLock?.request('screen').catch(() => undefined)
   }
 

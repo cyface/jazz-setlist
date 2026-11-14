@@ -9,8 +9,9 @@ const sw = readFileSync(new URL('../dist/client/sw.js', import.meta.url), 'utf8'
 const problems = ['assets/app.js', 'assets/app.css']
   .filter((url) => !new RegExp(`\\{url:"${url}",revision:"[0-9a-f]+"\\}`).test(sw))
   .map((url) => `precaches ${url} without a revision; clients would never get a new version`)
-// The generated message handler (skip waiting when the page asks) doesn't count: main.js never asks.
-if (!/self\.skipWaiting\(\)/.test(sw.replace(/"SKIP_WAITING"===\w+\.data\.type&&self\.skipWaiting\(\)/g, ''))) {
+// Without skipWaiting, workbox generates a handler that skips waiting only when the page posts SKIP_WAITING (main.js
+// never does), so its self.skipWaiting() doesn't count. With the option on, that handler isn't generated.
+if (!/self\.skipWaiting\(\)/.test(sw) || sw.includes('SKIP_WAITING')) {
   problems.push("doesn't skip waiting; a new release would wait for every window of the app to close")
 }
 if (!/\bclientsClaim\(\)/.test(sw)) problems.push("doesn't claim clients; a first visit wouldn't work offline until a reload")

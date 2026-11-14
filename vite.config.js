@@ -31,6 +31,8 @@ const pwa = VitePWA({
     // A new release's worker takes over open pages at once (main.js then reloads them once, held while the
     // metronome plays), and a first install controls the page without a reload, so it works offline right away.
     // The plugin sets these for autoUpdate only when it injects the registration; main.js registers /sw.js itself.
+    // Safe because the client has no lazy chunks: a page not reloaded yet (metronome playing) never asks for a file
+    // the new worker dropped from the precache. Code-splitting would need a fallback for a failed import().
     skipWaiting: true,
     clientsClaim: true,
     globPatterns: ['**/*.{js,css,png,svg,ico,woff2}'],
