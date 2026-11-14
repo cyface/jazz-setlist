@@ -1,4 +1,5 @@
 <script>
+  import ActiveSetlists from '../components/ActiveSetlists.svelte'
   import AddToSetlist from '../components/AddToSetlist.svelte'
   import ArrangementDetail from '../components/ArrangementDetail.svelte'
   import Icon from '../components/Icon.svelte'
@@ -13,6 +14,7 @@
   let error = $state('')
   let query = $state('')
   let addToSetlist = $state()
+  let activeSetlists = $state()
 
   const filtered = $derived(
     arrangements.filter((a) =>
@@ -30,6 +32,7 @@
 
 <div class="split" class:has-selection={selected}>
   <section class="list-pane">
+    <ActiveSetlists bind:this={activeSetlists} />
     <div class="toolbar">
       <h1>Tunes</h1>
       <a class="button primary" href="#/arrangements/new"><Icon name="plus" size={18} /> New tune</a>
@@ -72,7 +75,7 @@
   {/if}
 </div>
 
-<AddToSetlist bind:this={addToSetlist} />
+<AddToSetlist bind:this={addToSetlist} onadded={(saved) => activeSetlists?.update(saved)} />
 
 <style>
   .title {
