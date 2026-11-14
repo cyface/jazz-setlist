@@ -5,8 +5,9 @@
   import TuneBadges from '../components/TuneBadges.svelte'
   import TuneSearch from '../components/TuneSearch.svelte'
   import { api } from '../lib/api.js'
+  import { connection } from '../lib/connection.svelte.js'
   import { navigate } from '../lib/router.js'
-  import { recallPosition, rememberPosition } from '../lib/setlist-position.js'
+  import { findTune, recallPosition, rememberPosition } from '../lib/setlist-position.js'
   import { moveItem, numberSets } from '../../shared/setlist.js'
 
   let { id } = $props()
@@ -35,10 +36,14 @@
   const toLocal = (item) => ({ key: item.id ?? crypto.randomUUID(), kind: item.kind, label: item.label ?? '', arrangement: item.arrangement })
 
   function load() {
-    Promise.all([api.getSetlist(id), api.listArrangements()])
+    // Offline, the setlist comes from the saved copy; the tune list (only needed to add tunes) can't load, and isn't needed.
+    Promise.all([api.getSetlist(id), api.listArrangements().catch((e) => (e.offline ? [] : Promise.reject(e)))])
       .then(([s, a]) => {
+        // Item ids are new after a save elsewhere: keep the open tune open (and its metronome playing) by position + tune.
+        const open = selected && { index: selectedIndex, arrangementId: selected.arrangement.id }
         setlist = s
         items = s.items.map(toLocal)
+        if (open) selectedKey = findTune(tunes, open)?.key ?? null
         arrangements = a
         resetInfo()
         lastKey = recallPosition(id, tunes)
@@ -47,6 +52,21 @@
       .catch((e) => (error = e.message))
   }
   load()
+
+  /** Showing the saved copy (it has savedAt; the API's setlists don't). */
+  const fromSavedCopy = $derived(Boolean(setlist?.savedAt))
+
+  // Back online while showing the saved copy: load the real one (which may have changed elsewhere).
+  $effect(() => {
+    if (fromSavedCopy && !connection.offline) load()
+  })
+  // Offline, nothing can be saved, so leave edit mode.
+  $effect(() => {
+    if (connection.offline) {
+      editing = false
+      editingInfo = false
+    }
+  })
 
   function select(key) {
     selectedKey = key
@@ -148,6 +168,7 @@
 
   const formatDate = (d) =>
     d ? new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : ''
+  const formatSavedAt = (iso) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
   const startsSet = (index) => numbered[index].kind === 'tune' && numbered[index].number === 1
 </script>
 
@@ -184,12 +205,17 @@
           <div>
             <h1>{setlist.name}</h1>
             <p class="muted">{[formatDate(setlist.showDate), setlist.venue].filter(Boolean).join(' · ')}</p>
+            {#if fromSavedCopy}
+              <p class="muted saved-copy">Saved copy from {formatSavedAt(setlist.savedAt)}</p>
+            {/if}
             {#if setlist.archivedAt}
               <p class="archived-tag"><Icon name="archive" size={16} /> Archived</p>
             {/if}
           </div>
           <div class="toolbar-actions">
-            {#if editing}
+            {#if connection.offline}
+              <!-- Nothing can be saved offline. -->
+            {:else if editing}
               <button onclick={() => (editingInfo = true)}><Icon name="edit" size={18} /> Details</button>
               <button class="primary" onclick={() => (editing = false)}>Done</button>
             {:else}
@@ -242,10 +268,12 @@
         {/each}
       </ol>
 
-      <div class="add-bar">
-        <TuneSearch {arrangements} {inSetlist} onpick={addTune} />
-        <button onclick={addBreak}><Icon name="break" size={18} /> Add set break</button>
-      </div>
+      {#if !connection.offline}
+        <div class="add-bar">
+          <TuneSearch {arrangements} {inSetlist} onpick={addTune} />
+          <button onclick={addBreak}><Icon name="break" size={18} /> Add set break</button>
+        </div>
+      {/if}
     </section>
 
     {#if selected}
