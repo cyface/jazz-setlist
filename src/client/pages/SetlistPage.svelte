@@ -6,11 +6,12 @@
   import TuneSearch from '../components/TuneSearch.svelte'
   import { api } from '../lib/api.js'
   import { connection } from '../lib/connection.svelte.js'
-  import { navigate } from '../lib/router.js'
+  import { editTuneHref, navigate } from '../lib/router.js'
   import { findTune, recallPosition, rememberPosition } from '../lib/setlist-position.js'
   import { moveItem, numberSets } from '../../shared/setlist.js'
 
-  let { id } = $props()
+  /** `open` ({ index, arrangementId }): the tune to open once loaded (back from editing it). */
+  let { id, open = null } = $props()
 
   let setlist = $state(null)
   let items = $state([])
@@ -35,21 +36,36 @@
 
   const toLocal = (item) => ({ key: item.id ?? crypto.randomUUID(), kind: item.kind, label: item.label ?? '', arrangement: item.arrangement })
 
+  // The URL asked for a tune to open (back from editing it): open it once, and drop the request from the URL,
+  // so reloading or reopening the app shows the setlist as usual.
+  let opening = $state.snapshot(open)
+  if (opening) history.replaceState(null, '', `#/setlists/${id}`)
+
   function load() {
     // Offline, the setlist comes from the saved copy; the tune list (only needed to add tunes) can't load, and isn't needed.
     Promise.all([api.getSetlist(id), api.listArrangements().catch((e) => (e.offline ? [] : Promise.reject(e)))])
       .then(([s, a]) => {
         // Item ids are new after a save elsewhere: keep the open tune open (and its metronome playing) by position + tune.
-        const open = selected && { index: selectedIndex, arrangementId: selected.arrangement.id }
+        const keep = selected ? { index: selectedIndex, arrangementId: selected.arrangement.id } : opening
+        opening = null
         setlist = s
         items = s.items.map(toLocal)
-        if (open) selectedKey = findTune(tunes, open)?.key ?? null
         arrangements = a
         resetInfo()
         lastKey = recallPosition(id, tunes)
-        revealCurrent()
+        const key = keep && findTune(tunes, keep)?.key
+        if (key) select(key)
+        else {
+          selectedKey = null
+          revealCurrent()
+        }
       })
-      .catch((e) => (error = e.message))
+      .catch((e) => {
+        // Back from editing a tune in a setlist that's gone since: show the tune instead (replacing the history entry,
+        // so Back doesn't land here again).
+        if (opening && e.status === 404) return location.replace(`#/arrangements/${opening.arrangementId}`)
+        error = e.message
+      })
   }
   load()
 
@@ -294,7 +310,11 @@
             <Icon name="right" size={18} />
           </button>
         </div>
-        <ArrangementDetail arrangement={selected.arrangement} heading="Set {selected.set} · Tune {selected.number}" />
+        <ArrangementDetail
+          arrangement={selected.arrangement}
+          heading="Set {selected.set} · Tune {selected.number}"
+          editHref={editTuneHref(selected.arrangement.id, { setlistId: id, index: selectedIndex })}
+        />
       </section>
     {/if}
   </div>

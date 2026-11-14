@@ -1,11 +1,13 @@
 <script>
   import Icon from './Icon.svelte'
   import { connection } from '../lib/connection.svelte.js'
+  import { editTuneHref } from '../lib/router.js'
   import Metronome from './Metronome.svelte'
   import SoloOrder from './SoloOrder.svelte'
   import TuneBadges from './TuneBadges.svelte'
 
-  let { arrangement, heading = undefined } = $props()
+  /** `editHref`: the Edit link, when the form should return somewhere other than this tune (a setlist). */
+  let { arrangement, heading = undefined, editHref = undefined } = $props()
 </script>
 
 <article class="detail">
@@ -18,7 +20,7 @@
         .join(' · ')}
     </p>
     {#if !connection.offline}
-      <a class="button edit" href="#/arrangements/{arrangement.id}/edit"><Icon name="edit" size={18} /> Edit</a>
+      <a class="button edit" href={editHref ?? editTuneHref(arrangement.id)}><Icon name="edit" size={18} /> Edit</a>
     {/if}
   </header>
 

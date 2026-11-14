@@ -32,6 +32,12 @@ describe('last route', () => {
     expect(startRoute('#/preferences', 'u1', storage)).toBeNull()
   })
 
+  it('remembers the page without the tune a link asked it to open', () => {
+    const storage = memory()
+    rememberRoute('#/setlists/abc?tune=2&arrangement=a1', 'u1', storage)
+    expect(startRoute('', 'u1', storage)).toBe('#/setlists/abc')
+  })
+
   it('remembers the Tunes page for an empty hash', () => {
     const storage = memory()
     rememberRoute('#/setlists/abc', 'u1', storage)
