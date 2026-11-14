@@ -3,30 +3,17 @@
   import { forgetRoute } from '../lib/last-route.js'
   import { clearCopy } from '../lib/offline.js'
   import { forgetPositions } from '../lib/setlist-position.js'
-  import { applyTheme, readTheme } from '../lib/theme.js'
   import { initials, session } from '../lib/session.svelte.js'
-  import { nextTheme } from '../../shared/theme.js'
 
   let { sidebarOpen, ontogglesidebar } = $props()
 
   let menuOpen = $state(false)
-  let theme = $state(readTheme())
-  const THEME_UI = {
-    system: { icon: 'auto', label: 'Theme: match system' },
-    dark: { icon: 'moon', label: 'Theme: dark' },
-    light: { icon: 'sun', label: 'Theme: light' },
-  }
 
   /** The next person on this browser shouldn't see this user's saved setlists or land on their last page. */
   function forgetDevice() {
     clearCopy()
     forgetRoute()
     forgetPositions()
-  }
-
-  function cycleTheme() {
-    theme = nextTheme(theme)
-    applyTheme(theme)
   }
 </script>
 
@@ -45,9 +32,6 @@
   <a class="topbar-brand" href="#/">Jazz Setlist</a>
 
   <div class="topbar-actions">
-    <button class="icon-button" onclick={cycleTheme} aria-label={THEME_UI[theme].label} title={THEME_UI[theme].label}>
-      <Icon name={THEME_UI[theme].icon} size={20} />
-    </button>
     <div class="user-menu">
       <button
         class="avatar"

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { THEME_BOOT_SCRIPT, THEME_STORAGE_KEY, nextTheme } from '../../shared/theme.js'
+import { THEME_BOOT_SCRIPT, THEME_STORAGE_KEY } from '../../shared/theme.js'
 import { applyTheme, readTheme } from './theme.js'
 
 function memoryStorage(initial = {}) {
@@ -13,12 +13,6 @@ function memoryStorage(initial = {}) {
 }
 
 describe('theme', () => {
-  it('cycles system → dark → light → system', () => {
-    expect(nextTheme('system')).toBe('dark')
-    expect(nextTheme('dark')).toBe('light')
-    expect(nextTheme('light')).toBe('system')
-  })
-
   it('reads a saved theme and ignores junk', () => {
     expect(readTheme(memoryStorage({ [THEME_STORAGE_KEY]: 'dark' }))).toBe('dark')
     expect(readTheme(memoryStorage({ [THEME_STORAGE_KEY]: 'purple' }))).toBe('system')
