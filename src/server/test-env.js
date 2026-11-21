@@ -5,14 +5,16 @@ import { app } from './index.jsx'
 
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../drizzle')
 
-/** In-memory D1 (real SQLite semantics via Miniflare) with all migrations applied. */
+/** In-memory D1 (real SQLite semantics via Miniflare) with all migrations applied, and an in-memory R2 bucket. */
 export async function createTestEnv() {
   const mf = new Miniflare({
     modules: true,
     script: 'export default { fetch() { return new Response(null) } }',
     d1Databases: { DB: 'test-db' },
+    r2Buckets: { DOCUMENTS: 'test-documents' },
   })
   const DB = await mf.getD1Database('DB')
+  const DOCUMENTS = await mf.getR2Bucket('DOCUMENTS')
   const files = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith('.sql')).sort()
   for (const file of files) {
     const sql = await readFile(join(MIGRATIONS_DIR, file), 'utf8')
@@ -20,7 +22,7 @@ export async function createTestEnv() {
       if (statement.trim()) await DB.prepare(statement).run()
     }
   }
-  const env = { DB }
+  const env = { DB, DOCUMENTS }
 
   function api(email, method, path, body) {
     const headers = { 'CF-Access-Authenticated-User-Email': email }
@@ -32,7 +34,19 @@ export async function createTestEnv() {
     )
   }
 
-  return { env, api, dispose: () => mf.dispose() }
+  /** Uploads `file` (a File) as a document on a tune, the way the browser's form does. A null field is left out. */
+  function upload(email, arrangementId, file, type = 'lead_sheet') {
+    const body = new FormData()
+    if (type !== null) body.set('type', type)
+    if (file !== null) body.set('file', file)
+    return app.request(
+      `http://jazz.test/api/arrangements/${arrangementId}/documents`,
+      { method: 'POST', headers: { 'CF-Access-Authenticated-User-Email': email }, body },
+      env,
+    )
+  }
+
+  return { env, api, upload, dispose: () => mf.dispose() }
 }
 
 export const sampleArrangement = (overrides = {}) => ({

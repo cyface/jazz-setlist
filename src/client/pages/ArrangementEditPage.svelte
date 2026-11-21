@@ -1,5 +1,6 @@
 <script>
   import ChoiceGroup from '../components/ChoiceGroup.svelte'
+  import DocumentsEditor from '../components/DocumentsEditor.svelte'
   import SoloOrderEditor from '../components/SoloOrderEditor.svelte'
   import { api } from '../lib/api.js'
   import { tapTempo } from '../lib/metronome.js'
@@ -23,6 +24,7 @@
     drumsEntryNote: '',
     soloOrder: [],
     notes: '',
+    documents: [],
   })
 
   let form = $state(blank())
@@ -56,7 +58,9 @@
     saving = true
     error = ''
     try {
-      const payload = { ...$state.snapshot(form), tempo: Number(form.tempo), beatsPerBar: Number(form.beatsPerBar), beatUnit: Number(form.beatUnit) }
+      // Documents are saved as they're added and removed (DocumentsEditor), not with the form.
+      const { documents: _documents, ...fields } = $state.snapshot(form)
+      const payload = { ...fields, tempo: Number(form.tempo), beatsPerBar: Number(form.beatsPerBar), beatUnit: Number(form.beatUnit) }
       const saved = id ? await api.updateArrangement(id, payload) : await api.createArrangement(payload)
       leaveForm(afterEditPath(saved.id, id ? from : null))
     } catch (err) {
@@ -137,6 +141,15 @@
         <span>Notes</span>
         <textarea bind:value={form.notes} rows="4" maxlength="5000"></textarea>
       </label>
+
+      <fieldset class="plain">
+        <legend>Documents</legend>
+        {#if id}
+          <DocumentsEditor arrangementId={id} bind:documents={form.documents} />
+        {:else}
+          <p class="muted">Save the tune first, then edit it to attach lead sheets and other documents.</p>
+        {/if}
+      </fieldset>
 
       {#if error}<p class="error">{error}</p>{/if}
 

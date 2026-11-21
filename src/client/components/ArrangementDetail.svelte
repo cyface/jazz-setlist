@@ -5,9 +5,14 @@
   import Metronome from './Metronome.svelte'
   import SoloOrder from './SoloOrder.svelte'
   import TuneBadges from './TuneBadges.svelte'
+  import { LABELS } from '../../shared/attributes.js'
+  import { documentUrl, formatSize, isImage } from '../../shared/documents.js'
 
   /** `editHref`: the Edit link, when the form should return somewhere other than this tune (a setlist). */
   let { arrangement, heading = undefined, editHref = undefined } = $props()
+
+  // A tune saved for offline use before documents existed has none.
+  const documents = $derived(arrangement.documents ?? [])
 </script>
 
 <article class="detail">
@@ -42,6 +47,37 @@
     <section>
       <h3>Notes</h3>
       <p class="notes">{arrangement.notes}</p>
+    </section>
+  {/if}
+
+  {#if documents.length}
+    <section>
+      <h3>Documents</h3>
+      {#if connection.offline}
+        <p class="offline-note">You're offline: a document shows only if this device has opened it before.</p>
+      {/if}
+      <ul class="documents">
+        {#each documents as doc (doc.id)}
+          <li>
+            {#if isImage(doc)}
+              <figure>
+                <a href={documentUrl(doc)} target="_blank" rel="noopener" title="Open full size">
+                  <img src={documentUrl(doc)} alt="{LABELS.documentType[doc.type]}: {doc.name}" loading="lazy" />
+                </a>
+                <figcaption>{LABELS.documentType[doc.type]} · {doc.name}</figcaption>
+              </figure>
+            {:else}
+              <a class="file" href={documentUrl(doc)} target="_blank" rel="noopener">
+                <Icon name="document" />
+                <span>
+                  <strong>{doc.name}</strong>
+                  <span class="file-meta">{LABELS.documentType[doc.type]} · {formatSize(doc.size)}</span>
+                </span>
+              </a>
+            {/if}
+          </li>
+        {/each}
+      </ul>
     </section>
   {/if}
 </article>
@@ -89,5 +125,52 @@
   .notes {
     margin: 0;
     white-space: pre-wrap;
+  }
+  .documents {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .offline-note {
+    margin: 0 0 0.75rem;
+    color: var(--text-muted);
+  }
+  figure {
+    margin: 0;
+  }
+  /* A lead sheet photo fills the column, so it can be read from the drum stool. */
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  figcaption,
+  .file-meta {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+  figcaption {
+    margin-top: 0.35rem;
+  }
+  .file {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    text-decoration: none;
+  }
+  .file > span {
+    display: grid;
+    min-width: 0;
+  }
+  .file strong {
+    overflow-wrap: anywhere;
   }
 </style>

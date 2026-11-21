@@ -15,6 +15,18 @@ export const tune = (title, extra = {}) => ({
   drumsEntryNote: null,
   soloOrder: [],
   notes: null,
+  documents: [],
+  ...extra,
+})
+
+export const document = (arrangementId, name, extra = {}) => ({
+  id: `d-${name.toLowerCase().replace(/\W+/g, '-')}`,
+  arrangementId,
+  type: 'lead_sheet',
+  name,
+  contentType: 'image/png',
+  size: 48 * 1024,
+  createdAt: '2026-11-21T10:00:00Z',
   ...extra,
 })
 

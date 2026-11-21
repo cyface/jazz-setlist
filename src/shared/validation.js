@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { BEAT_UNITS, DRUM_IMPLEMENTS, DRUMS_ENTRIES, FEELS, TIME_SIGNATURES, TRADE_BARS } from './attributes.js'
+import { BEAT_UNITS, DOCUMENT_TYPES, DRUM_IMPLEMENTS, DRUMS_ENTRIES, FEELS, TIME_SIGNATURES, TRADE_BARS } from './attributes.js'
 
 const instrument = z.string().trim().toLowerCase().min(1).max(30)
 
@@ -37,6 +37,10 @@ export const arrangementInputSchema = z
     notes: optionalText(5000),
   })
   .transform((a) => (a.drumsEntry === 'top' ? { ...a, drumsEntryNote: null } : a))
+
+/** A document's type: sent with the upload, and changed with PUT /api/arrangements/:id/documents/:documentId. */
+export const documentTypeSchema = z.enum(DOCUMENT_TYPES)
+export const documentUpdateSchema = z.object({ type: documentTypeSchema })
 
 export const setlistInputSchema = z.object({
   name: z.string().trim().min(1).max(200),

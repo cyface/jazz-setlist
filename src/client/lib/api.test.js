@@ -85,6 +85,24 @@ describe('api offline fallback', () => {
     await api.updateSetlist('s1', { name: 'Gig' })
   })
 
+  it('uploads a document as form data and puts the changed tune in the saved setlists', async () => {
+    await api.me()
+    await saveActiveSetlistsOffline()
+    const documents = [{ id: 'd1', arrangementId: 'a1', type: 'arrangement', name: 'chart.pdf' }]
+    server.mockImplementationOnce(async (url, init) => {
+      expect(url).toBe('/api/arrangements/a1/documents')
+      expect(init.method).toBe('POST')
+      expect(init.headers).toBeUndefined() // the browser adds the multipart content type and boundary
+      expect(init.body).toBeInstanceOf(FormData)
+      expect(init.body.get('type')).toBe('arrangement')
+      expect(init.body.get('file').name).toBe('chart.pdf')
+      return json({ arrangement: { id: 'a1', title: 'Blue Bossa', tempo: 150, documents } }, 201)
+    })
+    const saved = await api.uploadDocument('a1', new File(['%PDF'], 'chart.pdf', { type: 'application/pdf' }), 'arrangement')
+    expect(saved.documents).toEqual(documents)
+    expect(savedSetlist('s1').items[0].arrangement.documents).toEqual(documents)
+  })
+
   it('still fails offline when nothing was saved', async () => {
     down = true
     await expect(api.me()).rejects.toBeInstanceOf(OfflineError)

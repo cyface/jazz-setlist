@@ -3,6 +3,7 @@ import { HTTPException } from 'hono/http-exception'
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { arrangements, setlistItems, setlists } from '../../db/schema.js'
 import { MAX_SETLIST_ITEMS, setlistAddTuneSchema, setlistArchiveSchema, setlistInputSchema, setlistItemsSchema } from '../../shared/validation.js'
+import { documentAttacher, documentsOfSetlist } from '../lib/documents.js'
 import { notFound, now, omitUserId, parseBody } from '../lib/http.js'
 
 // D1 allows at most 100 bound values per statement; a setlist item row binds 6.
@@ -21,11 +22,12 @@ async function loadSetlist(c, id) {
     .leftJoin(arrangements, eq(setlistItems.arrangementId, arrangements.id))
     .where(eq(setlistItems.setlistId, id))
     .orderBy(asc(setlistItems.position))
+  const attach = documentAttacher(await documentsOfSetlist(db, id))
   const items = rows.map(({ item, arrangement }) => ({
     id: item.id,
     kind: item.kind,
     label: item.label,
-    arrangement: arrangement ? omitUserId(arrangement) : null,
+    arrangement: arrangement ? attach(omitUserId(arrangement)) : null,
   }))
   return { ...omitUserId(setlist), items }
 }

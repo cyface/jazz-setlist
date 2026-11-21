@@ -166,6 +166,10 @@
   {:else if name === 'unarchive'}
     <rect x="3.5" y="4.5" width="17" height="4" rx="1" />
     <path d="M5 8.5V18a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 18V8.5M12 17v-5.5M9.5 14 12 11.5l2.5 2.5" />
+  {:else if name === 'document'}
+    <!-- a page with a folded corner -->
+    <path d="M7.5 3.5H14l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V5a1.5 1.5 0 0 1 1.5-1.5z" />
+    <path d="M14 3.5v4h4M9 12.5h6M9 16h6" />
   {:else if name === 'edit'}
     <path d="M4 20h4L19 9l-4-4L4 16z" />
   {/if}
