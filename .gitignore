@@ -22,3 +22,6 @@ __pycache__/
 # Playwright output
 test-results/
 playwright-report/
+
+# Lead Sheets
+lead-sheets

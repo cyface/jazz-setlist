@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { app } from './index.jsx'
+import { MAX_DOCUMENT_BYTES, MAX_DOCUMENTS_PER_TUNE } from '../shared/documents.js'
 import { createTestEnv, sampleArrangement } from './test-env.js'
 
 const TIM = 'tim@example.com'
@@ -327,5 +328,165 @@ describe('page shell', () => {
     const res = await t.api(TIM, 'GET', '/nope')
     expect(res.status).toBe(404)
     expect(await res.json()).toEqual({ error: 'Not found' })
+  })
+})
+
+describe('documents', () => {
+  const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 1, 2, 3, 255])
+  const png = (name = 'autumn leaves.png') => new File([PNG], name, { type: 'image/png' })
+  const fileUrl = (doc) => `/arrangements/${doc.arrangementId}/documents/${doc.id}/file`
+  const stored = async (doc) => Boolean(await t.env.DOCUMENTS.head(`${doc.arrangementId}/${doc.id}`))
+
+  async function attach(email, arrangementId, file = png(), type = 'lead_sheet') {
+    const res = await t.upload(email, arrangementId, file, type)
+    expect(res.status).toBe(201)
+    return (await res.json()).arrangement.documents.at(-1)
+  }
+
+  it('attaches a binary file to a tune and serves the same bytes back', async () => {
+    const tune = await createArrangement(TIM)
+    expect(tune.documents).toEqual([])
+
+    const res = await t.upload(TIM, tune.id, png(), 'lead_sheet')
+    expect(res.status).toBe(201)
+    const { arrangement } = await res.json()
+    expect(arrangement.title).toBe(tune.title)
+    expect(arrangement.documents).toEqual([
+      { id: expect.any(String), arrangementId: tune.id, type: 'lead_sheet', name: 'autumn leaves.png', contentType: 'image/png', size: PNG.length, createdAt: expect.any(String) },
+    ])
+
+    const file = await t.api(TIM, 'GET', fileUrl(arrangement.documents[0]))
+    expect(file.status).toBe(200)
+    expect(file.headers.get('content-type')).toBe('image/png')
+    expect(file.headers.get('content-disposition')).toBe("inline; filename*=UTF-8''autumn%20leaves.png")
+    expect(file.headers.get('x-content-type-options')).toBe('nosniff')
+    expect(file.headers.get('cache-control')).toContain('private')
+    expect(new Uint8Array(await file.arrayBuffer())).toEqual(PNG)
+  })
+
+  it('returns a tune’s documents wherever the tune is returned', async () => {
+    const tune = await createArrangement(TIM, { title: 'Documented' })
+    const bare = await createArrangement(TIM, { title: 'Undocumented' })
+    const sheet = await attach(TIM, tune.id)
+    const chart = await attach(TIM, tune.id, new File(['%PDF-1.7'], 'chart.pdf', { type: 'application/pdf' }), 'arrangement')
+
+    const ids = (a) => a.documents.map((d) => d.id)
+    expect(ids((await (await t.api(TIM, 'GET', `/arrangements/${tune.id}`)).json()).arrangement)).toEqual([sheet.id, chart.id])
+
+    const { arrangements: all } = await (await t.api(TIM, 'GET', '/arrangements')).json()
+    expect(ids(all.find((a) => a.id === tune.id))).toEqual([sheet.id, chart.id])
+    expect(all.find((a) => a.id === bare.id).documents).toEqual([])
+
+    const saved = await (await t.api(TIM, 'PUT', `/arrangements/${tune.id}`, sampleArrangement({ title: 'Documented', tempo: 99 }))).json()
+    expect(ids(saved.arrangement)).toEqual([sheet.id, chart.id])
+
+    // In a setlist, once per tune even when the tune is played twice.
+    const { setlist } = await (await t.api(TIM, 'POST', '/setlists', { name: 'With documents' })).json()
+    const items = [tune, bare, tune].map((a) => ({ kind: 'tune', arrangementId: a.id }))
+    const full = await (await t.api(TIM, 'PUT', `/setlists/${setlist.id}/items`, { items })).json()
+    expect(full.setlist.items.map((i) => ids(i.arrangement))).toEqual([[sheet.id, chart.id], [], [sheet.id, chart.id]])
+  })
+
+  it('only lets images and PDFs open in the browser; anything else downloads', async () => {
+    const tune = await createArrangement(TIM)
+    const html = await attach(TIM, tune.id, new File(['<script>alert(1)</script>'], 'notes.html', { type: 'text/html' }), 'extended_notes')
+    const svg = await attach(TIM, tune.id, new File(['<svg/>'], 'sheet.svg', { type: 'image/svg+xml' }))
+    const untyped = await attach(TIM, tune.id, new File([PNG], 'chart.mus'), 'arrangement')
+    expect(untyped.contentType).toBe('application/octet-stream')
+
+    for (const doc of [html, svg, untyped]) {
+      const res = await t.api(TIM, 'GET', fileUrl(doc))
+      expect(res.headers.get('content-disposition')).toMatch(/^attachment;/)
+      expect(res.headers.get('x-content-type-options')).toBe('nosniff')
+    }
+  })
+
+  it('changes a document’s type', async () => {
+    const tune = await createArrangement(TIM)
+    const doc = await attach(TIM, tune.id)
+    const res = await t.api(TIM, 'PUT', `/arrangements/${tune.id}/documents/${doc.id}`, { type: 'extended_notes' })
+    expect(res.status).toBe(200)
+    expect((await res.json()).arrangement.documents).toMatchObject([{ id: doc.id, type: 'extended_notes', name: doc.name }])
+
+    const bad = await t.api(TIM, 'PUT', `/arrangements/${tune.id}/documents/${doc.id}`, { type: 'tab' })
+    expect(bad.status).toBe(400)
+  })
+
+  it('deletes a document and its file', async () => {
+    const tune = await createArrangement(TIM)
+    const [gone, kept] = [await attach(TIM, tune.id), await attach(TIM, tune.id)]
+    expect(await stored(gone)).toBe(true)
+
+    const res = await t.api(TIM, 'DELETE', `/arrangements/${tune.id}/documents/${gone.id}`)
+    expect(res.status).toBe(200)
+    expect((await res.json()).arrangement.documents.map((d) => d.id)).toEqual([kept.id])
+    expect(await stored(gone)).toBe(false)
+    expect(await stored(kept)).toBe(true)
+    expect((await t.api(TIM, 'GET', fileUrl(gone))).status).toBe(404)
+  })
+
+  it('deletes a tune’s files with the tune', async () => {
+    const tune = await createArrangement(TIM)
+    const doc = await attach(TIM, tune.id)
+    expect((await t.api(TIM, 'DELETE', `/arrangements/${tune.id}`)).status).toBe(204)
+    expect(await stored(doc)).toBe(false)
+    expect((await t.api(TIM, 'GET', fileUrl(doc))).status).toBe(404)
+  })
+
+  it("hides other users' documents", async () => {
+    const tune = await createArrangement(TIM)
+    const mine = await createArrangement(OTHER)
+    const doc = await attach(TIM, tune.id)
+
+    expect((await t.upload(OTHER, tune.id, png())).status).toBe(404)
+    expect((await t.api(OTHER, 'GET', fileUrl(doc))).status).toBe(404)
+    expect((await t.api(OTHER, 'PUT', `/arrangements/${tune.id}/documents/${doc.id}`, { type: 'arrangement' })).status).toBe(404)
+    expect((await t.api(OTHER, 'DELETE', `/arrangements/${tune.id}/documents/${doc.id}`)).status).toBe(404)
+    // Not through one of their own tunes either.
+    expect((await t.api(OTHER, 'GET', `/arrangements/${mine.id}/documents/${doc.id}/file`)).status).toBe(404)
+    expect((await t.api(OTHER, 'DELETE', `/arrangements/${mine.id}/documents/${doc.id}`)).status).toBe(404)
+    expect(await stored(doc)).toBe(true)
+    expect((await (await t.api(OTHER, 'GET', '/arrangements')).json()).arrangements.every((a) => a.documents.length === 0)).toBe(true)
+  })
+
+  it('rejects an upload without a valid type or file, or over the size limit', async () => {
+    const tune = await createArrangement(TIM)
+    expect((await t.upload(TIM, tune.id, png(), 'tab')).status).toBe(400)
+    expect((await t.upload(TIM, tune.id, png(), null)).status).toBe(400)
+    expect((await t.upload(TIM, tune.id, null)).status).toBe(400)
+    expect((await t.upload(TIM, tune.id, new File([], 'empty.png', { type: 'image/png' }))).status).toBe(400)
+    expect((await t.api(TIM, 'POST', `/arrangements/${tune.id}/documents`, { type: 'lead_sheet' })).status).toBe(400)
+
+    const big = await t.upload(TIM, tune.id, new File([new Uint8Array(MAX_DOCUMENT_BYTES + 1)], 'big.png', { type: 'image/png' }))
+    expect(big.status).toBe(413)
+    expect((await big.json()).error).toBe('A document can be at most 20 MB')
+    expect((await (await t.api(TIM, 'GET', `/arrangements/${tune.id}`)).json()).arrangement.documents).toEqual([])
+  })
+
+  it('refuses an upload posted from another site', async () => {
+    const tune = await createArrangement(TIM)
+    const res = await t.upload(TIM, tune.id, png(), 'lead_sheet', 'https://evil.example')
+    expect(res.status).toBe(403)
+    expect((await (await t.api(TIM, 'GET', `/arrangements/${tune.id}`)).json()).arrangement.documents).toEqual([])
+    // The same page can't delete either; the app's own origin can.
+    const headers = { 'CF-Access-Authenticated-User-Email': TIM, origin: 'https://evil.example' }
+    expect((await app.request(`http://jazz.test/api/arrangements/${tune.id}`, { method: 'DELETE', headers }, t.env)).status).toBe(403)
+    headers.origin = 'http://jazz.test'
+    expect((await app.request(`http://jazz.test/api/arrangements/${tune.id}`, { method: 'DELETE', headers }, t.env)).status).toBe(204)
+  })
+
+  it('names the download safely whatever the file was called', async () => {
+    const tune = await createArrangement(TIM)
+    const doc = await attach(TIM, tune.id, png("Don't Get Around (take 2) *final*.png"))
+    const res = await t.api(TIM, 'GET', fileUrl(doc))
+    expect(res.headers.get('content-disposition')).toBe("inline; filename*=UTF-8''Don%27t%20Get%20Around%20%28take%202%29%20%2Afinal%2A.png")
+  })
+
+  it('stops at the per-tune document limit', async () => {
+    const tune = await createArrangement(TIM)
+    for (let i = 0; i < MAX_DOCUMENTS_PER_TUNE; i++) await attach(TIM, tune.id, png(`page ${i}.png`))
+    const res = await t.upload(TIM, tune.id, png())
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toMatch(/at most 20 documents/)
   })
 })

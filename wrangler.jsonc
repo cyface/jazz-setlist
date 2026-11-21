@@ -22,6 +22,8 @@
       "migrations_dir": "./drizzle"
     }
   ],
+  // Files attached to tunes (src/server/routes/documents.js). Private: served only through the Worker.
+  "r2_buckets": [{ "binding": "DOCUMENTS", "bucket_name": "jazz-setlist-documents" }],
   // Cloudflare Access must protect this domain before it is deployed.
   "routes": [{ "pattern": "setlist.cyface.com", "custom_domain": true }]
 

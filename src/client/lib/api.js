@@ -10,14 +10,16 @@ export class OfflineError extends Error {
     Writes don't time out: aborting one wouldn't undo it on the server. */
 export const READ_TIMEOUT_MS = 8000
 
+/** `body`: sent as JSON, or as it is when it's a FormData (a file upload; the browser sets its content type). */
 async function request(method, path, body) {
+  const form = body instanceof FormData
   let res
   try {
     res = await fetch(`/api${path}`, {
       method,
       credentials: 'same-origin',
-      headers: body === undefined ? undefined : { 'content-type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: body === undefined || form ? undefined : { 'content-type': 'application/json' },
+      body: body === undefined || form ? body : JSON.stringify(body),
       signal: method === 'GET' ? AbortSignal.timeout(READ_TIMEOUT_MS) : undefined,
     })
   } catch {
@@ -50,6 +52,15 @@ const tap = (fn) => (value) => {
 }
 
 const setlist = (promise) => promise.then((r) => r.setlist).then(tap(offline.saveSetlist))
+/** A changed tune (its fields or its documents) also replaces its copy inside the saved setlists. */
+const arrangement = (promise) => promise.then((r) => r.arrangement).then(tap(offline.saveArrangement))
+
+function documentForm(file, type) {
+  const form = new FormData()
+  form.set('type', type)
+  form.set('file', file)
+  return form
+}
 
 export const api = {
   me: () =>
@@ -65,11 +76,14 @@ export const api = {
   listArrangements: () => request('GET', '/arrangements').then((r) => r.arrangements),
   getArrangement: (id) => request('GET', `/arrangements/${id}`).then((r) => r.arrangement),
   createArrangement: (data) => request('POST', '/arrangements', data).then((r) => r.arrangement),
-  updateArrangement: (id, data) =>
-    request('PUT', `/arrangements/${id}`, data)
-      .then((r) => r.arrangement)
-      .then(tap(offline.saveArrangement)),
+  updateArrangement: (id, data) => arrangement(request('PUT', `/arrangements/${id}`, data)),
   deleteArrangement: (id) => request('DELETE', `/arrangements/${id}`).then(tap(() => offline.forgetArrangement(id))),
+
+  // Documents attached to a tune. Each resolves to the tune with its documents as they are now.
+  uploadDocument: (arrangementId, file, type) =>
+    arrangement(request('POST', `/arrangements/${arrangementId}/documents`, documentForm(file, type))),
+  updateDocument: (arrangementId, id, data) => arrangement(request('PUT', `/arrangements/${arrangementId}/documents/${id}`, data)),
+  deleteDocument: (arrangementId, id) => arrangement(request('DELETE', `/arrangements/${arrangementId}/documents/${id}`)),
 
   listSetlists: (contains) =>
     contains

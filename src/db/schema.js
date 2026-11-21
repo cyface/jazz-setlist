@@ -1,5 +1,5 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { DRUM_IMPLEMENTS, DRUMS_ENTRIES, FEELS } from '../shared/attributes.js'
+import { DOCUMENT_TYPES, DRUM_IMPLEMENTS, DRUMS_ENTRIES, FEELS } from '../shared/attributes.js'
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -33,6 +33,24 @@ export const arrangements = sqliteTable(
     updatedAt: text('updated_at').notNull(),
   },
   (t) => [index('arrangements_user_idx').on(t.userId)],
+)
+
+/** Files attached to a tune. The bytes are in R2 (binding DOCUMENTS) under `<arrangement_id>/<id>`. */
+export const documents = sqliteTable(
+  'documents',
+  {
+    id: text('id').primaryKey(),
+    arrangementId: text('arrangement_id')
+      .notNull()
+      .references(() => arrangements.id, { onDelete: 'cascade' }),
+    type: text('type', { enum: DOCUMENT_TYPES }).notNull(),
+    /** The uploaded file's name. */
+    name: text('name').notNull(),
+    contentType: text('content_type').notNull(),
+    size: integer('size').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [index('documents_arrangement_idx').on(t.arrangementId)],
 )
 
 export const setlists = sqliteTable(
