@@ -9,6 +9,16 @@ import { Shell } from './shell.jsx'
 
 export const app = new Hono()
 
+// Another site can't send JSON to the API without a CORS preflight, but it can post a form (a document upload is
+// one) with the user's Access cookie. Browsers put Origin on every such request, so a change from another origin
+// is refused. (Requests without Origin aren't from a page: tests, scripts.)
+app.use('/api/*', async (c, next) => {
+  const origin = c.req.header('origin')
+  if (origin && origin !== new URL(c.req.url).origin && !['GET', 'HEAD', 'OPTIONS'].includes(c.req.method)) {
+    return c.json({ error: 'Cross-site request refused' }, 403)
+  }
+  await next()
+})
 app.use('/api/*', authMiddleware())
 app.route('/api/me', meRoutes)
 app.route('/api/arrangements', arrangementsRoutes)

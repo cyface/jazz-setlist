@@ -7,6 +7,9 @@ import { documentTypeSchema, documentUpdateSchema } from '../../shared/validatio
 import { deleteFiles, documentAttacher, documentKey, documentsOfArrangement } from '../lib/documents.js'
 import { notFound, now, omitUserId, parseBody } from '../lib/http.js'
 
+/** RFC 5987 `filename*` value: encodeURIComponent leaves ' ( ) * as they are, which the header doesn't allow. */
+const headerFilename = (name) => encodeURIComponent(name).replace(/['()*]/g, (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`)
+
 const badRequest = (message) => new HTTPException(400, { message })
 const tooLarge = () => new HTTPException(413, { message: `A document can be at most ${formatSize(MAX_DOCUMENT_BYTES)}` })
 
@@ -94,7 +97,7 @@ export const documentsRoutes = new Hono()
     return c.body(object.body, 200, {
       'content-type': doc.contentType,
       'content-length': String(object.size),
-      'content-disposition': `${disposition}; filename*=UTF-8''${encodeURIComponent(doc.name)}`,
+      'content-disposition': `${disposition}; filename*=UTF-8''${headerFilename(doc.name)}`,
       'x-content-type-options': 'nosniff',
       'cache-control': 'private, max-age=31536000, immutable',
       etag: object.httpEtag,

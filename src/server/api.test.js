@@ -463,6 +463,25 @@ describe('documents', () => {
     expect((await (await t.api(TIM, 'GET', `/arrangements/${tune.id}`)).json()).arrangement.documents).toEqual([])
   })
 
+  it('refuses an upload posted from another site', async () => {
+    const tune = await createArrangement(TIM)
+    const res = await t.upload(TIM, tune.id, png(), 'lead_sheet', 'https://evil.example')
+    expect(res.status).toBe(403)
+    expect((await (await t.api(TIM, 'GET', `/arrangements/${tune.id}`)).json()).arrangement.documents).toEqual([])
+    // The same page can't delete either; the app's own origin can.
+    const headers = { 'CF-Access-Authenticated-User-Email': TIM, origin: 'https://evil.example' }
+    expect((await app.request(`http://jazz.test/api/arrangements/${tune.id}`, { method: 'DELETE', headers }, t.env)).status).toBe(403)
+    headers.origin = 'http://jazz.test'
+    expect((await app.request(`http://jazz.test/api/arrangements/${tune.id}`, { method: 'DELETE', headers }, t.env)).status).toBe(204)
+  })
+
+  it('names the download safely whatever the file was called', async () => {
+    const tune = await createArrangement(TIM)
+    const doc = await attach(TIM, tune.id, png("Don't Get Around (take 2) *final*.png"))
+    const res = await t.api(TIM, 'GET', fileUrl(doc))
+    expect(res.headers.get('content-disposition')).toBe("inline; filename*=UTF-8''Don%27t%20Get%20Around%20%28take%202%29%20%2Afinal%2A.png")
+  })
+
   it('stops at the per-tune document limit', async () => {
     const tune = await createArrangement(TIM)
     for (let i = 0; i < MAX_DOCUMENTS_PER_TUNE; i++) await attach(TIM, tune.id, png(`page ${i}.png`))

@@ -52,7 +52,9 @@ const pwa = VitePWA({
     navigateFallback: null,
     runtimeCaching: [
       {
-        urlPattern: ({ request }) => request.mode === 'navigate',
+        // The app's pages only. A document opened in its own tab (/api/…/file) is a navigation too, and must not
+        // be kept here: this cache never expires and outlives logging out.
+        urlPattern: ({ request, url }) => request.mode === 'navigate' && !url.pathname.startsWith('/api/'),
         handler: 'NetworkFirst',
         options: {
           cacheName: 'shell',

@@ -105,3 +105,25 @@ test('the reload for a new release waits while the metronome plays', async ({ pa
   // Reloaded back to the same setlist.
   await expect(page.getByRole('heading', { name: 'Winter Gig', level: 1 })).toBeVisible()
 })
+
+test('a document opened in its own tab is not kept in the service worker cache', async ({ page, data }) => {
+  const tune = await data.tune('Documented')
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64')
+  const upload = await page.request.post(`/api/arrangements/${tune.id}/documents`, {
+    multipart: { type: 'lead_sheet', file: { name: 'sheet.png', mimeType: 'image/png', buffer: png } },
+  })
+  expect(upload.status()).toBe(201)
+  const [doc] = (await upload.json()).arrangement.documents
+
+  await underServiceWorker(page, '/')
+  // Opening the file is a navigation, like the app's own pages, which the worker caches for offline use.
+  const file = await page.goto(`/api/arrangements/${tune.id}/documents/${doc.id}/file`)
+  expect(file.status()).toBe(200)
+  await page.goto('/')
+  const cached = await page.evaluate(async () => {
+    const urls = []
+    for (const name of await caches.keys()) for (const req of await (await caches.open(name)).keys()) urls.push(new URL(req.url).pathname)
+    return urls
+  })
+  expect(cached.filter((path) => path.startsWith('/api/'))).toEqual([])
+})

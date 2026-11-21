@@ -34,14 +34,15 @@ export async function createTestEnv() {
     )
   }
 
-  /** Uploads `file` (a File) as a document on a tune, the way the browser's form does. A null field is left out. */
-  function upload(email, arrangementId, file, type = 'lead_sheet') {
+  /** Uploads `file` (a File) as a document on a tune, the way the browser's form does. A null field is left out.
+      `origin`: the page the form is posted from (the app's own, unless a test says otherwise). */
+  function upload(email, arrangementId, file, type = 'lead_sheet', origin = 'http://jazz.test') {
     const body = new FormData()
     if (type !== null) body.set('type', type)
     if (file !== null) body.set('file', file)
     return app.request(
       `http://jazz.test/api/arrangements/${arrangementId}/documents`,
-      { method: 'POST', headers: { 'CF-Access-Authenticated-User-Email': email }, body },
+      { method: 'POST', headers: { 'CF-Access-Authenticated-User-Email': email, origin }, body },
       env,
     )
   }
